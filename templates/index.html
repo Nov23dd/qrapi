@@ -12,6 +12,7 @@
         <form id="generate-form">
             <label for="text">包裹代碼：</label>
             <input type="text" id="text" name="text" required>
+            <div id="error-message" style="color: red; display: none;">包裹代碼必須至少15個字符</div>
             <button type="button" onclick="startAutoGenerate()">開始自動生成</button>
             <button type="button" onclick="stopAutoGenerate()">停止自動生成</button>
             <button type="button" onclick="generateExcel()">生成 Excel</button>
@@ -45,14 +46,34 @@
         let autoGenerateInterval;
 
         function startAutoGenerate() {
+            const text = document.getElementById('text').value;
+            const errorMessage = document.getElementById('error-message');
+
+            if (text.length < 15) {
+                document.getElementById('text').style.borderColor = 'red';
+                errorMessage.style.display = 'block';
+                return;
+            } else {
+                document.getElementById('text').style.borderColor = '';
+                errorMessage.style.display = 'none';
+            }
+
             autoGenerateInterval = setInterval(function() {
-                fetch('/auto_generate')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            updateTable(data.qr_data);
-                        }
-                    });
+                fetch('/auto_generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'text=' + encodeURIComponent(text),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateTable(data.qr_data);
+                    } else {
+                        console.error(data.message);
+                    }
+                });
             }, 5000); // 每5秒自動生成一次
         }
 

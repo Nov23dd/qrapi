@@ -1,10 +1,10 @@
+from urllib.parse import quote as url_quote
 from flask import Flask, request, render_template, send_file, jsonify
 import qrcode
 import io
 import base64
 from datetime import datetime
 import pandas as pd
-from urllib.parse import quote as url_quote
 
 app = Flask(__name__)
 qr_data_list = []
@@ -17,14 +17,19 @@ def index():
 def generate_qr():
     global qr_data_list
     data = request.form['text']
+    if not data:
+        return 'No data provided', 400
+
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
     return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
 
-@app.route('/auto_generate')
+@app.route('/auto_generate', methods=['POST'])
 def auto_generate():
     global qr_data_list
-    data = "example_code"  # 可用其他方式獲取自動生成的數據
+    data = request.form['text']
+    if not data:
+        return jsonify(status='error', message='No data provided')
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
     return jsonify(status='success', qr_data=qr_data_list)
@@ -65,4 +70,5 @@ def generate_qr_code(data):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
