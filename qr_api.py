@@ -23,19 +23,6 @@ def generate_qr():
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
     return jsonify(status='success', qr_data=qr_data_list)
-erate)
-
-@app.route('/auto_generate', methods=['POST'])
-def auto_generate():
-    global qr_data_list
-    data = request.form['text']
-    if not data:
-        return jsonify(status='error', message='No data provided')
-
-    qr_code, timestamp = generate_qr_code(data)
-    qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-    return jsonify(status='success', qr_data=qr_data_list, new_qr={'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-
 
 @app.route('/generate_excel')
 def generate_excel():
@@ -73,5 +60,3 @@ def generate_qr_code(data):
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
