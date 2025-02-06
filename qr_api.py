@@ -10,7 +10,7 @@ qr_data_list = []
 
 @app.route('/')
 def index():
-    return render_template('index.html', qr_data=qr_data_list)
+    return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
 
 @app.route('/generate', methods=['POST'])
 def generate_qr():
@@ -39,8 +39,7 @@ def generate_qr():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
     
-    return render_template('index.html', qr_data=qr_data_list)
+    return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
 
 if __name__ == '__main__':
     app.run(debug=True)
-
