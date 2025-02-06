@@ -1,7 +1,8 @@
 from flask import Flask, request, send_file
 import qrcode
 import io
-from urllib.parse import quote as url_quote
+from werkzeug.urls import url_quote
+
 
 app = Flask(__name__)
 
