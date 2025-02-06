@@ -14,21 +14,39 @@
             <input type="text" id="text" name="text" required>
             <button type="submit">生成 QR Code</button>
         </form>
-        {% if qr_code %}
-        <div class="qr-code-section">
+        {% if qr_data %}
+        <div class="table-section">
             <h2>生成的 QR Code：</h2>
-            <img src="{{ qr_code }}" alt="QR Code">
-            <p>生成日期：{{ timestamp }}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>包裹代碼</th>
+                        <th>QR Code</th>
+                        <th>生成日期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for index, data in enumerate(qr_data) %}
+                    <tr>
+                        <td>{{ index + 1 }}</td>
+                        <td>{{ data.text }}</td>
+                        <td><img src="{{ data.qr_code }}" alt="QR Code"></td>
+                        <td>{{ data.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% endif %}
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const qrCodeSection = document.querySelector('.qr-code-section');
-            if (qrCodeSection) {
-                qrCodeSection.scrollIntoView({ behavior: 'smooth' });
+            const tableSection = document.querySelector('.table-section');
+            if (tableSection) {
+                tableSection.scrollIntoView({ behavior: 'smooth' });
             }
         });
-    </script>    
+    </script>
 </body>
 </html>

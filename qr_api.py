@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file, redirect, url_for
+from flask import Flask, request, render_template
 import qrcode
 import io
 import base64
@@ -6,13 +6,15 @@ from datetime import datetime
 from urllib.parse import quote as url_quote
 
 app = Flask(__name__)
+qr_data_list = []
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', qr_data=qr_data_list)
 
 @app.route('/generate', methods=['POST'])
 def generate_qr():
+    global qr_data_list
     data = request.form['text']
     if not data:
         return 'No data provided', 400
@@ -35,7 +37,10 @@ def generate_qr():
     qr_code = "data:image/png;base64," + img_str
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    return render_template('index.html', qr_code=qr_code, timestamp=timestamp)
+    qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+    
+    return render_template('index.html', qr_data=qr_data_list)
 
 if __name__ == '__main__':
     app.run(debug=True)
+
