@@ -1,5 +1,6 @@
-Flask==2.0.3
-qrcode[pil]==7.3.1
-gunicorn==23.0.0
-Werkzeug==2.2.3
-
+numpy==2.2.2
+pandas==2.2.3
+python-dateutil==2.9.0.post0
+pytz==2025.1
+six==1.17.0
+tzdata==2025.1
