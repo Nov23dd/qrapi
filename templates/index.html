@@ -9,15 +9,15 @@
 <body>
     <div class="container">
         <h1>蝦皮包裹 QR Code 生成</h1>
-        <form id="generate-form">
+        <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">包裹代碼：</label>
             <input type="text" id="text" name="text" required>
             <div id="error-message" style="color: red; display: none;">包裹代碼必須至少15個字符</div>
-            <button type="button" onclick="startAutoGenerate()">開始自動生成</button>
-            <button type="button" onclick="stopAutoGenerate()">停止自動生成</button>
+            <button type="submit">生成 QR Code</button>
             <button type="button" onclick="generateExcel()">生成 Excel</button>
             <button type="button" onclick="clearAll()">全部清除</button>
         </form>
+        
         <div class="table-section">
             <h2>生成的 QR Code：</h2>
             <table>
@@ -43,9 +43,7 @@
         </div>
     </div>
     <script>
-        let autoGenerateInterval;
-    
-        function startAutoGenerate() {
+        function generateQrCode() {
             const text = document.getElementById('text').value;
             const errorMessage = document.getElementById('error-message');
     
@@ -58,31 +56,24 @@
                 errorMessage.style.display = 'none';
             }
     
-            autoGenerateInterval = setInterval(function() {
-                fetch('/auto_generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: 'text=' + encodeURIComponent(text),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        updateTable(data.qr_data);
-                        console.log('New QR Code:', data.new_qr); // 調試輸出新生成的QR code
-                    } else {
-                        console.error(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            }, 5000); // 每5秒自動生成一次
-        }
-    
-        function stopAutoGenerate() {
-            clearInterval(autoGenerateInterval);
+            fetch('/generate_qr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'text=' + encodeURIComponent(text),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateTable(data.qr_data);
+                } else {
+                    console.error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         }
     
         function updateTable(qr_data) {
@@ -113,7 +104,7 @@
                     }
                 });
         }
-    </script>
+    </script>    
     
 </body>
 </html>

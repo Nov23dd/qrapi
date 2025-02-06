@@ -13,16 +13,17 @@ qr_data_list = []
 def index():
     return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
 
-@app.route('/generate', methods=['POST'])
+@app.route('/generate_qr', methods=['POST'])
 def generate_qr():
     global qr_data_list
     data = request.form['text']
     if not data:
-        return 'No data provided', 400
+        return jsonify(status='error', message='No data provided')
 
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-    return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
+    return jsonify(status='success', qr_data=qr_data_list)
+erate)
 
 @app.route('/auto_generate', methods=['POST'])
 def auto_generate():
