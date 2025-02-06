@@ -44,20 +44,20 @@
     </div>
     <script>
         let autoGenerateInterval;
-
+    
         function startAutoGenerate() {
             const text = document.getElementById('text').value;
             const errorMessage = document.getElementById('error-message');
-
+    
             if (text.length < 15) {
-                document.getElementById('text').style.borderColor = 'red';
+                document.getElementById('text').classList.add('error');
                 errorMessage.style.display = 'block';
                 return;
             } else {
-                document.getElementById('text').style.borderColor = '';
+                document.getElementById('text').classList.remove('error');
                 errorMessage.style.display = 'none';
             }
-
+    
             autoGenerateInterval = setInterval(function() {
                 fetch('/auto_generate', {
                     method: 'POST',
@@ -70,17 +70,21 @@
                 .then(data => {
                     if (data.status === 'success') {
                         updateTable(data.qr_data);
+                        console.log('New QR Code:', data.new_qr); // 調試輸出新生成的QR code
                     } else {
                         console.error(data.message);
                     }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                 });
             }, 5000); // 每5秒自動生成一次
         }
-
+    
         function stopAutoGenerate() {
             clearInterval(autoGenerateInterval);
         }
-
+    
         function updateTable(qr_data) {
             const tableBody = document.getElementById('qr-code-table');
             tableBody.innerHTML = '';
@@ -95,11 +99,11 @@
                 tableBody.appendChild(row);
             });
         }
-
+    
         function generateExcel() {
             window.location.href = '/generate_excel';
         }
-
+    
         function clearAll() {
             fetch('/clear_all', { method: 'POST' })
                 .then(response => response.json())
@@ -110,5 +114,6 @@
                 });
         }
     </script>
+    
 </body>
 </html>

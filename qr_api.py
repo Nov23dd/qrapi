@@ -30,9 +30,11 @@ def auto_generate():
     data = request.form['text']
     if not data:
         return jsonify(status='error', message='No data provided')
+
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-    return jsonify(status='success', qr_data=qr_data_list)
+    return jsonify(status='success', qr_data=qr_data_list, new_qr={'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+
 
 @app.route('/generate_excel')
 def generate_excel():
