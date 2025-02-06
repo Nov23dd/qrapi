@@ -9,12 +9,14 @@
 <body>
     <div class="container">
         <h1>蝦皮包裹 QR Code 生成</h1>
-        <form action="/generate" method="post">
+        <form id="generate-form">
             <label for="text">包裹代碼：</label>
             <input type="text" id="text" name="text" required>
-            <button type="submit">生成 QR Code</button>
+            <button type="button" onclick="startAutoGenerate()">開始自動生成</button>
+            <button type="button" onclick="stopAutoGenerate()">停止自動生成</button>
+            <button type="button" onclick="generateExcel()">生成 Excel</button>
+            <button type="button" onclick="clearAll()">全部清除</button>
         </form>
-        {% if qr_data %}
         <div class="table-section">
             <h2>生成的 QR Code：</h2>
             <table>
@@ -26,7 +28,7 @@
                         <th>生成日期</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="qr-code-table">
                     {% for index, data in enumerate(qr_data) %}
                     <tr>
                         <td>{{ index + 1 }}</td>
@@ -38,15 +40,54 @@
                 </tbody>
             </table>
         </div>
-        {% endif %}
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tableSection = document.querySelector('.table-section');
-            if (tableSection) {
-                tableSection.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
+        let autoGenerateInterval;
+
+        function startAutoGenerate() {
+            autoGenerateInterval = setInterval(function() {
+                fetch('/auto_generate')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            updateTable(data.qr_data);
+                        }
+                    });
+            }, 5000); // 每5秒自動生成一次
+        }
+
+        function stopAutoGenerate() {
+            clearInterval(autoGenerateInterval);
+        }
+
+        function updateTable(qr_data) {
+            const tableBody = document.getElementById('qr-code-table');
+            tableBody.innerHTML = '';
+            qr_data.forEach((data, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${data.text}</td>
+                    <td><img src="${data.qr_code}" alt="QR Code"></td>
+                    <td>${data.timestamp}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function generateExcel() {
+            window.location.href = '/generate_excel';
+        }
+
+        function clearAll() {
+            fetch('/clear_all', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateTable([]);
+                    }
+                });
+        }
     </script>
 </body>
 </html>
