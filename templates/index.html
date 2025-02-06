@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>蝦皮包裹 QR Code 生成</h1>
+        <form action="/generate" method="post">
+            <label for="text">包裹代碼：</label>
+            <input type="text" id="text" name="text" required>
+            <button type="submit">生成 QR Code</button>
+        </form>
+        {% if qr_code %}
+        <div class="qr-code-section">
+            <h2>生成的 QR Code：</h2>
+            <img src="{{ qr_code }}" alt="QR Code">
+            <p>生成日期：{{ timestamp }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrCodeSection = document.querySelector('.qr-code-section');
+            if (qrCodeSection) {
+                qrCodeSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    </script>    
+</body>
+</html>
