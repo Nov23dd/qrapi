@@ -17,7 +17,7 @@
             <button type="button" onclick="generateExcel()">生成 Excel</button>
             <button type="button" onclick="clearAll()">全部清除</button>
         </form>
-        
+        <audio id="error-sound" src="{{ url_for('static', filename='error-sound.mp3') }}"></audio>
         <div class="table-section">
             <h2>生成的 QR Code：</h2>
             <table>
@@ -46,16 +46,18 @@
         function generateQrCode() {
             const text = document.getElementById('text').value;
             const errorMessage = document.getElementById('error-message');
-    
+            const errorSound = document.getElementById('error-sound');
+
             if (text.length < 15) {
                 document.getElementById('text').classList.add('error');
                 errorMessage.style.display = 'block';
+                errorSound.play();
                 return;
             } else {
                 document.getElementById('text').classList.remove('error');
                 errorMessage.style.display = 'none';
             }
-    
+
             fetch('/generate_qr', {
                 method: 'POST',
                 headers: {
@@ -75,7 +77,7 @@
                 console.error('Error:', error);
             });
         }
-    
+
         function updateTable(qr_data) {
             const tableBody = document.getElementById('qr-code-table');
             tableBody.innerHTML = '';
@@ -90,11 +92,11 @@
                 tableBody.appendChild(row);
             });
         }
-    
+
         function generateExcel() {
             window.location.href = '/generate_excel';
         }
-    
+
         function clearAll() {
             fetch('/clear_all', { method: 'POST' })
                 .then(response => response.json())
@@ -104,7 +106,6 @@
                     }
                 });
         }
-    </script>    
-    
+    </script>
 </body>
 </html>
