@@ -8,14 +8,16 @@ import pandas as pd
 
 app = Flask(__name__)
 qr_data_list = []
+counter = 0
 
 @app.route('/')
 def index():
-    return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate)
+    global counter
+    return render_template('index.html', qr_data=qr_data_list, enumerate=enumerate, counter=counter)
 
 @app.route('/generate_qr', methods=['POST'])
 def generate_qr():
-    global qr_data_list
+    global qr_data_list, counter
     data = request.form['text']
     if not data:
         return jsonify(status='error', message='No data provided')
@@ -25,8 +27,9 @@ def generate_qr():
 
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+    counter += 1
 
-    return jsonify(status='success', qr_data=qr_data_list)
+    return jsonify(status='success', qr_data=qr_data_list, counter=counter)
 
 @app.route('/generate_excel')
 def generate_excel():
@@ -40,8 +43,9 @@ def generate_excel():
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
-    global qr_data_list
+    global qr_data_list, counter
     qr_data_list = []
+    counter = 0
     return jsonify(status='success')
 
 def generate_qr_code(data):

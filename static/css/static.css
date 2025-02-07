@@ -83,20 +83,26 @@ button {
     font-weight: 700;
     font-size: 16px;
     backdrop-filter: blur(10px);
-    margin: 8px 0;  /* 增加上下間距 */
+    margin: 8px 0;
 }
 
 .button-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;  /* 設定按鈕間距 */
+    gap: 16px;
 }
 
 button:hover {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
     box-shadow: 0px 0px 12px rgba(255, 255, 255, 0.4);
+}
+
+#success-message, #error-message {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 18px;
 }
 
 .qr-code-section {

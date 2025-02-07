@@ -11,10 +11,12 @@
 <body>
     <div class="container">
         <h1>Mu's Shopee</h1>
+        <div id="counter-display">目前處理的件數：{{ counter }}</div>
         <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
             <input type="text" id="text" name="text" required>
             <div id="error-message" style="color: pink; display: none;">寄件編號必須至少15個字符</div>
+            <div id="success-message" style="color: lightgreen; display: none;">刷取成功</div>
             <div class="button-group">
                 <button type="submit">手動生成QR Code</button>
                 <button type="button" onclick="generateExcel()">生成Excel</button>
@@ -23,6 +25,7 @@
             </div>
         </form>
         <audio id="error-sound" src="{{ url_for('static', filename='error-sound.wav') }}"></audio>
+        <audio id="success-sound" src="{{ url_for('static', filename='success-sound.mp3') }}"></audio>
         <div class="table-section">
             <h2>生成的 QR Code：</h2>
             <table>
