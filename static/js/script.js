@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    $("#generate-form").submit(function(e) {
+    $("#qrForm").submit(function(e) {
         e.preventDefault();
         let text = $("#text").val();
         let errorMessage = $("#error-message");
@@ -36,15 +36,14 @@ $(document).ready(function() {
 });
 
 function updateTable(qr_data) {
-    let tableBody = $("#qr-code-table");
+    let tableBody = $("#qrCodes");
     tableBody.empty();
     qr_data.forEach((data, index) => {
-        let row = `<tr>
-            <td>${index + 1}</td>
-            <td>${data.text}</td>
-            <td><img src="${data.qr_code}" alt="QR Code"></td>
-            <td>${data.timestamp}</td>
-        </tr>`;
+        let row = `<div class="qr-code">
+            <img src="${data.qr_code}" alt="QR Code">
+            <div class="text">Text: ${data.text}</div>
+            <div class="timestamp">Timestamp: ${data.timestamp}</div>
+        </div>`;
         tableBody.append(row);
     });
 }

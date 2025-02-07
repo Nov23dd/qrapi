@@ -3,50 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mu's Shopee</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>QR Code Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Shopee QR Code</h1>
-        <form id="generate-form" onsubmit="generateQrCode(); return false;">
-            <label for="text">寄件編號：</label>
+        <h1>QR Code Generator</h1>
+        <form id="qrForm" method="post" action="/generate_qr">
+            <label for="text">Enter text to generate QR code:</label>
             <input type="text" id="text" name="text" required>
-            <div id="error-message" style="color: pink; display: none;"></div>
-            <div class="button-group">
-                <button type="submit">手動生成QR Code</button>
-                <button type="button" onclick="generateExcel()">生成Excel</button>
-                <button type="button" onclick="window.location.href='/generate_pdf'">生成PDF</button>
-                <button type="button" id="clear-all">全部清除</button>
-            </div>
+            <button type="submit">Generate QR Code</button>
         </form>
-        <audio id="error-sound" src="{{ url_for('static', filename='error-sound.wav') }}"></audio>
-        <div class="table-section">
-            <h2>生成的 QR Code：</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>包裹代碼</th>
-                        <th>QR Code</th>
-                        <th>生成日期</th>
-                    </tr>
-                </thead>
-                <tbody id="qr-code-table">
-                    {% for index, data in enumerate(qr_data) %}
-                    <tr>
-                        <td>{{ index + 1 }}</td>
-                        <td>{{ data.text }}</td>
-                        <td><img src="{{ data.qr_code }}" alt="QR Code"></td>
-                        <td>{{ data.timestamp }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+        <h2>QR Codes</h2>
+        <div id="qrCodes">
+            {% for idx, qr in enumerate(qr_data) %}
+                <div class="qr-code">
+                    <img src="{{ qr.qr_code }}" alt="QR Code">
+                    <div class="text">Text: {{ qr.text }}</div>
+                    <div class="timestamp">Timestamp: {{ qr.timestamp }}</div>
+                </div>
+            {% endfor %}
         </div>
+
+        <form method="get" action="/generate_excel">
+            <button type="submit">Download Excel</button>
+        </form>
+        <form method="get" action="/generate_pdf">
+            <button type="submit">Download PDF</button>
+        </form>
+        <form id="clearForm" method="post" action="/clear_all">
+            <button type="submit">Clear All</button>
+        </form>
     </div>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

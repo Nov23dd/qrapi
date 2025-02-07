@@ -84,6 +84,7 @@ button {
     backdrop-filter: blur(10px);
     margin: 8px 0;  /* 增加上下間距 */
 }
+
 .button-group {
     display: flex;
     flex-direction: column;
