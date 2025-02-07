@@ -5,7 +5,7 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-import docraptor
+from weasyprint import HTML
 
 app = Flask(__name__)
 qr_data_list = []
@@ -41,18 +41,8 @@ def generate_excel():
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
     rendered = render_template('pdf_template.html', qr_data=qr_data_list, enumerate=enumerate)
-
-    docraptor_client = docraptor.DocApi()
-    docraptor_client.api_client.configuration.username = 'lvW0gTDfsq2gUGsDaru6'
-
-    response = docraptor_client.create_doc({
-        "test": True,  # test documents are free but watermarked
-        "document_content": rendered,
-        "name": "qr_codes.pdf",
-        "document_type": "pdf",
-    })
-
-    return send_file(io.BytesIO(response), attachment_filename='qr_codes.pdf', as_attachment=True)
+    pdf = HTML(string=rendered).write_pdf()
+    return send_file(io.BytesIO(pdf), attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
