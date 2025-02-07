@@ -5,17 +5,10 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-from threading import Thread
-import time
+import pdfkit
 
 app = Flask(__name__)
 qr_data_list = []
-
-def fetch_data(seller_id):
-    # 假設這是您的刷取操作
-    time.sleep(2)  # 模擬延遲
-    print(f'Successfully fetched data for seller {seller_id}')
-    # 您可以在這裡執行實際的API請求操作
 
 @app.route('/')
 def index():
@@ -33,13 +26,6 @@ def generate_qr():
 
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-    
-    # 啟動一個新線程來處理每個賣家的數據刷取
-    seller_ids = ['seller1', 'seller2', 'seller3']  # 這裡是賣家的ID列表
-    for seller_id in seller_ids:
-        thread = Thread(target=fetch_data, args=(seller_id,))
-        thread.start()
-
     return jsonify(status='success', qr_data=qr_data_list)
 
 @app.route('/generate_excel')
@@ -54,22 +40,9 @@ def generate_excel():
 
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
-    images = []
-
-    for idx, item in enumerate(qr_data_list):
-        img_data = base64.b64decode(item['qr_code'].split(',')[1])
-        img = Image.open(io.BytesIO(img_data))
-        
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-        draw.text((10, 180), f"Text: {item['text']}", fill="black", font=font)
-        draw.text((10, 200), f"Timestamp: {item['timestamp']}", fill="black", font=font)
-
-        images.append(img)
-
+    rendered = render_template('pdf_template.html', qr_data=qr_data_list, enumerate=enumerate)
     pdf_path = "qr_codes.pdf"
-    images[0].save(pdf_path, save_all=True, append_images=images[1:], format="PDF")
-    
+    pdfkit.from_string(rendered, pdf_path)
     return send_file(pdf_path, attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])

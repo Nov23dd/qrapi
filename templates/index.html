@@ -3,44 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S hopee QR Code</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
+    <title>Mu's Shopee</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <h1>S hopee QR Code</h1>
-        <form id="qrForm" method="post" action="/generate_qr">
+        <h1>Shopee QR Code</h1>
+        <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
             <input type="text" id="text" name="text" required>
-            <button type="submit">手動生成QR Code</button>
-        </form>
-
-        <div class="button-group">
-            <form method="get" action="/generate_excel">
-                <button type="submit">生成Excel</button>
-            </form>
-            <form method="get" action="/generate_pdf">
-                <button type="submit">生成PDF</button>
-            </form>
-            <form id="clearForm" method="post" action="/clear_all">
-                <button type="submit">全部清除</button>
-            </form>
-        </div>
-
-        <div class="qr-code-section">
-            <h2>生成的 QR Code：</h2>
-            <div id="qrCodes">
-                {% for idx, qr in enumerate(qr_data) %}
-                    <div class="qr-code">
-                        <img src="{{ qr.qr_code }}" alt="QR Code">
-                        <div class="text">包裹代碼: {{ qr.text }}</div>
-                        <div class="timestamp">生成日期: {{ qr.timestamp }}</div>
-                    </div>
-                {% endfor %}
+            <div id="error-message" style="color: pink; display: none;"></div>
+            <div class="button-group">
+                <button type="submit">手動生成QR Code</button>
+                <button type="button" onclick="generateExcel()">生成Excel</button>
+                <button type="button" onclick="window.location.href='/generate_pdf'">生成PDF</button>
+                <button type="button" id="clear-all">全部清除</button>
             </div>
+        </form>
+        <audio id="error-sound" src="{{ url_for('static', filename='error-sound.wav') }}"></audio>
+        <div class="table-section">
+            <h2>生成的 QR Code：</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>包裹代碼</th>
+                        <th>QR Code</th>
+                        <th>生成日期</th>
+                    </tr>
+                </thead>
+                <tbody id="qr-code-table">
+                    {% for index, data in enumerate(qr_data) %}
+                    <tr>
+                        <td>{{ index + 1 }}</td>
+                        <td>{{ data.text }}</td>
+                        <td><img src="{{ data.qr_code }}" alt="QR Code"></td>
+                        <td>{{ data.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-    
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
