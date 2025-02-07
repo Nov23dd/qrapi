@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mu's Shopee</title>
+    <title>Mu's Shopee - {{ username }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Mu's Shopee</h1>
+        <h1>{{ username }}'s Shopee</h1>
         <div id="counter-display">目前處理的件數：{{ counter }}</div>
         <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
@@ -49,6 +49,74 @@
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        const username = "{{ username }}";
+
+        $(document).ready(function() {
+            $("#generate-form").submit(function(e) {
+                e.preventDefault();
+                let text = $("#text").val();
+                let errorMessage = $("#error-message");
+                let successMessage = $("#success-message");
+                let errorSound = $("#error-sound")[0];
+                let successSound = $("#success-sound")[0];
+
+                if (text.length < 15) {
+                    $("#text").addClass('error');
+                    errorMessage.text("寄件編號必須至少15個字符").show();
+                    errorSound.play();
+                    $("#text").val('');  // 清空輸入欄
+                    return;
+                } else {
+                    $("#text").removeClass('error');
+                    errorMessage.hide();
+                }
+
+                $.post(`/generate_qr/${username}`, { text: text }, function(response) {
+                    if (response.status === 'success') {
+                        $("#text").val('');  // 清空輸入欄
+                        successMessage.text("刷取成功").show();
+                        successSound.play();
+                        setTimeout(function() {
+                            successMessage.hide();
+                        }, 2000);  // 2秒後隱藏提示信息
+                        updateTable(response.qr_data);
+                        updateCounter(response.counter);
+                    } else {
+                        $("#text").val('');  // 清空輸入欄
+                        errorMessage.text(response.message).show();
+                        errorSound.play();
+                    }
+                });
+            });
+
+            $("#clear-all").click(function() {
+                $.post(`/clear_all/${username}`, function(response) {
+                    if (response.status === 'success') {
+                        updateTable([]);
+                        updateCounter(0);
+                    }
+                });
+            });
+        });
+
+        function updateTable(qr_data) {
+            let tableBody = $("#qr-code-table");
+            tableBody.empty();
+            qr_data.forEach((data, index) => {
+                let row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${data.text}</td>
+                    <td><img src="${data.qr_code}" alt="QR Code"></td>
+                    <td>${data.timestamp}</td>
+                </tr>`;
+                tableBody.append(row);
+            });
+        }
+
+        function updateCounter(counter) {
+            $("#counter-display").text("目前處理的件數：" + counter);
+        }
+    </script>
 </body>
 </html>

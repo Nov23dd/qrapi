@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mu's Shopee - 選擇使用者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cover.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>歡迎來到Mu's Shopee</h1>
+        <h2>請選擇您的名稱</h2>
+        <div class="user-selection">
+            <button onclick="window.location.href='/user/Alice'">Alice</button>
+            <button onclick="window.location.href='/user/Bob'">Bob</button>
+            <button onclick="window.location.href='/user/Charlie'">Charlie</button>
+        </div>
+    </div>
+</body>
+</html>

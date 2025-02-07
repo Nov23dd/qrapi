@@ -1,4 +1,6 @@
 $(document).ready(function() {
+    const username = $("#username").val();
+
     $("#generate-form").submit(function(e) {
         e.preventDefault();
         let text = $("#text").val();
@@ -18,7 +20,7 @@ $(document).ready(function() {
             errorMessage.hide();
         }
 
-        $.post("/generate_qr", { text: text }, function(response) {
+        $.post(`/generate_qr/${username}`, { text: text }, function(response) {
             if (response.status === 'success') {
                 $("#text").val('');  // 清空輸入欄
                 successMessage.text("刷取成功").show();
@@ -37,7 +39,7 @@ $(document).ready(function() {
     });
 
     $("#clear-all").click(function() {
-        $.post("/clear_all", function(response) {
+        $.post(`/clear_all/${username}`, function(response) {
             if (response.status === 'success') {
                 updateTable([]);
                 updateCounter(0);
@@ -62,15 +64,4 @@ function updateTable(qr_data) {
 
 function updateCounter(counter) {
     $("#counter-display").text("目前處理的件數：" + counter);
-}
-
-function clearAll() {
-    fetch('/clear_all', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                updateTable([]);
-                updateCounter(0);
-            }
-        });
 }

@@ -1,0 +1,44 @@
+body {
+    font-family: 'Cormorant Garamond', serif;
+    background: linear-gradient(to right, #ff7e5f, #feb47b);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    text-align: center;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 50px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+.user-selection button {
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.user-selection button:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateY(-2px);
+}
