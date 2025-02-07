@@ -1,10 +1,4 @@
 from flask import Flask, request, render_template, jsonify
-import qrcode
-import io
-import base64
-from datetime import datetime
-import pandas as pd
-import pytz
 
 app = Flask(__name__)
 user_data = {
@@ -12,11 +6,32 @@ user_data = {
     "Bob": [],
     "Charlie": []
 }
-counter = 0
 
 @app.route('/')
 def cover():
     return render_template('cover.html')
+
+@app.route('/manage_users')
+def manage_users():
+    return render_template('manage_users.html', users=user_data.keys())
+
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    username = request.form['username']
+    if username not in user_data:
+        user_data[username] = []
+        return jsonify(status='success')
+    else:
+        return jsonify(status='error', message='User already exists')
+
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+    username = request.form['username']
+    if username in user_data:
+        del user_data[username]
+        return jsonify(status='success')
+    else:
+        return jsonify(status='error', message='User not found')
 
 @app.route('/user/<username>')
 def user_page(username):
@@ -27,7 +42,6 @@ def user_page(username):
 
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
-    global counter
     if username not in user_data:
         return jsonify(status='error', message='User not found')
     
@@ -40,7 +54,6 @@ def generate_qr(username):
 
     qr_code, timestamp = generate_qr_code(data)
     user_data[username].append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
-    counter += 1
 
     return jsonify(status='success', qr_data=user_data[username], counter=len(user_data[username]))
 

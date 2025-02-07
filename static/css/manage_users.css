@@ -1,7 +1,6 @@
 body {
     font-family: 'Cormorant Garamond', serif;
-    background: url('https://live.staticflickr.com/7130/27805159482_306cef2c1c_n.jpg') no-repeat center center fixed;
-    background-size: cover;
+    background: linear-gradient(to right, #ff7e5f, #feb47b);
     color: #ffffff;
     display: flex;
     justify-content: center;
@@ -25,22 +24,40 @@ h1 {
 
 h2 {
     font-size: 24px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
-.user-selection button {
+form {
+    margin-bottom: 20px;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 6px;
+}
+
+button {
     background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
     padding: 10px 20px;
-    margin: 10px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.3s;
 }
 
-.user-selection button:hover {
+button:hover {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
 }
 
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 10px;
+}

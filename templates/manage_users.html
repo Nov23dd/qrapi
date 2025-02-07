@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mu's Shopee - 管理使用者</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manage_users.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>管理使用者</h1>
+        <form id="add-user-form">
+            <label for="username">新增使用者名稱：</label>
+            <input type="text" id="username" name="username" required>
+            <button type="submit">新增</button>
+        </form>
+        <h2>現有使用者</h2>
+        <ul id="user-list">
+            {% for user in users %}
+            <li>{{ user }} <button onclick="deleteUser('{{ user }}')">刪除</button></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $("#add-user-form").submit(function(e) {
+            e.preventDefault();
+            let username = $("#username").val();
+            $.post("/add_user", { username: username }, function(response) {
+                if (response.status === 'success') {
+                    let newUser = `<li>${username} <button onclick="deleteUser('${username}')">刪除</button></li>`;
+                    $("#user-list").append(newUser);
+                    $("#username").val('');
+                }
+            });
+        });
+
+        function deleteUser(username) {
+            $.post("/delete_user", { username: username }, function(response) {
+                if (response.status === 'success') {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
