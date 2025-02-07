@@ -5,6 +5,8 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 from PIL import Image
 
 app = Flask(__name__)
@@ -40,23 +42,31 @@ def generate_excel():
 
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
-    images = []
+    output = io.BytesIO()
+    c = canvas.Canvas(output, pagesize=letter)
+    width, height = letter
     
     for idx, item in enumerate(qr_data_list):
         img_data = base64.b64decode(item['qr_code'].split(',')[1])
         img = Image.open(io.BytesIO(img_data))
+        img_io = io.BytesIO()
+        img.save(img_io, format='PNG')
+        img_io.seek(0)
         
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-        draw.text((10, 180), f"Text: {item['text']}", fill="black", font=font)
-        draw.text((10, 200), f"Timestamp: {item['timestamp']}", fill="black", font=font)
+        x = 50
+        y = height - (idx + 1) * 200  # Adjust the y-position for each QR code
+        
+        if y < 100:
+            c.showPage()
+            y = height - 200
+        
+        c.drawImage(img_io, x, y, width=150, height=150)
+        c.drawString(x, y-20, f"Text: {item['text']}")
+        c.drawString(x, y-35, f"Timestamp: {item['timestamp']}")
 
-        images.append(img)
-
-    pdf_path = "qr_codes.pdf"
-    images[0].save(pdf_path, save_all=True, append_images=images[1:], format="PDF")
-    
-    return send_file(pdf_path, attachment_filename='qr_codes.pdf', as_attachment=True)
+    c.save()
+    output.seek(0)
+    return send_file(output, attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
