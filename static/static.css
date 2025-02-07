@@ -3,8 +3,7 @@
 
 body {
     font-family: 'Cormorant Garamond', serif;
-    background: linear-gradient(rgba(10, 10, 30, 0.6), rgba(0, 0, 0, 0.8)), 
-                 url('./images/starrynight.jpg')no-repeat center center fixed;
+    background: url('./images/starrynight.jpg') no-repeat center center fixed;
     background-size: cover;
     color: #f0f0f0;
     margin: 0;
