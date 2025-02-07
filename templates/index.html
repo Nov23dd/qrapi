@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>QR Code Generator</h1>
+        <img src="{{ url_for('static', filename='images/example_image.jpg') }}" alt="Example Image">
         <form id="qrForm" method="post" action="/generate_qr">
             <label for="text">Enter text to generate QR code:</label>
             <input type="text" id="text" name="text" required>
