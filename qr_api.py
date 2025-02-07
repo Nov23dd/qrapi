@@ -5,7 +5,7 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+import pdfkit
 
 app = Flask(__name__)
 qr_data_list = []
@@ -40,22 +40,9 @@ def generate_excel():
 
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
-    images = []
-
-    for idx, item in enumerate(qr_data_list):
-        img_data = base64.b64decode(item['qr_code'].split(',')[1])
-        img = Image.open(io.BytesIO(img_data))
-
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-        draw.text((10, 180), f"Text: {item['text']}", fill="black", font=font)
-        draw.text((10, 200), f"Timestamp: {item['timestamp']}", fill="black", font=font)
-
-        images.append(img)
-
+    rendered = render_template('pdf_template.html', qr_data=qr_data_list, enumerate=enumerate)
     pdf_path = "qr_codes.pdf"
-    images[0].save(pdf_path, save_all=True, append_images=images[1:], format="PDF")
-
+    pdfkit.from_string(rendered, pdf_path)
     return send_file(pdf_path, attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
