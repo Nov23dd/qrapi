@@ -1,6 +1,6 @@
 body {
     font-family: 'Cormorant Garamond', serif;
-    background: url('https://live.staticflickr.com/7130/27805159482_306cef2c1c_n.jpg') no-repeat center center fixed;
+    background: url('https://example.com/path-to-your-clear-star-background-image.jpg') no-repeat center center fixed;
     background-size: cover;
     color: #ffffff;
     display: flex;
@@ -43,4 +43,3 @@ h2 {
     background: rgba(255, 255, 255, 0.3);
     transform: translateY(-2px);
 }
-

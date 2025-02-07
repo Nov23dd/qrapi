@@ -1,4 +1,9 @@
 from flask import Flask, request, render_template, jsonify
+import qrcode
+import io
+import base64
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 user_data = {

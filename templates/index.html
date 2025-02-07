@@ -61,7 +61,7 @@
                 let errorSound = $("#error-sound")[0];
                 let successSound = $("#success-sound")[0];
 
-                if (text.length < 15) {
+                if (text.length != 15) {
                     $("#text").addClass('error');
                     errorMessage.text("寄件編號必須至少15個字符").show();
                     errorSound.play();
