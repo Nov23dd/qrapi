@@ -4,7 +4,7 @@
 body {
     font-family: 'Cormorant Garamond', serif;
     background: linear-gradient(135deg, #0d0d24, #1a1a1a), 
-                url('https://www.flickr.com/photos/57435451@N06/27805159482') no-repeat center center fixed;
+                url('./static/starrynight.jpg') no-repeat center center fixed;
     background-size: cover;
     color: #f0f0f0;
     margin: 0;
