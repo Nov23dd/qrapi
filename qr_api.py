@@ -14,7 +14,7 @@ user_data = {
 
 @app.route('/')
 def cover():
-    return render_template('cover.html')
+    return render_template('cover.html', users=user_data.keys())
 
 @app.route('/manage_users')
 def manage_users():
