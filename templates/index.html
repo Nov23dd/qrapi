@@ -3,39 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Generator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
+    <title>S hopee QR Code</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>QR Code Generator</h1>
-        <img src="{{ url_for('static', filename='images/example_image.jpg') }}" alt="Example Image">
+        <h1>S hopee QR Code</h1>
         <form id="qrForm" method="post" action="/generate_qr">
-            <label for="text">Enter text to generate QR code:</label>
+            <label for="text">寄件編號：</label>
             <input type="text" id="text" name="text" required>
-            <button type="submit">Generate QR Code</button>
+            <button type="submit">手動生成QR Code</button>
         </form>
 
-        <h2>QR Codes</h2>
-        <div id="qrCodes">
-            {% for idx, qr in enumerate(qr_data) %}
-                <div class="qr-code">
-                    <img src="{{ qr.qr_code }}" alt="QR Code">
-                    <div class="text">Text: {{ qr.text }}</div>
-                    <div class="timestamp">Timestamp: {{ qr.timestamp }}</div>
-                </div>
-            {% endfor %}
+        <div class="button-group">
+            <form method="get" action="/generate_excel">
+                <button type="submit">生成Excel</button>
+            </form>
+            <form method="get" action="/generate_pdf">
+                <button type="submit">生成PDF</button>
+            </form>
+            <form id="clearForm" method="post" action="/clear_all">
+                <button type="submit">全部清除</button>
+            </form>
         </div>
 
-        <form method="get" action="/generate_excel">
-            <button type="submit">Download Excel</button>
-        </form>
-        <form method="get" action="/generate_pdf">
-            <button type="submit">Download PDF</button>
-        </form>
-        <form id="clearForm" method="post" action="/clear_all">
-            <button type="submit">Clear All</button>
-        </form>
+        <div class="qr-code-section">
+            <h2>生成的 QR Code：</h2>
+            <div id="qrCodes">
+                {% for idx, qr in enumerate(qr_data) %}
+                    <div class="qr-code">
+                        <img src="{{ qr.qr_code }}" alt="QR Code">
+                        <div class="text">包裹代碼: {{ qr.text }}</div>
+                        <div class="timestamp">生成日期: {{ qr.timestamp }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
     
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
