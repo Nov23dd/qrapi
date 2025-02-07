@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mu's Shopee</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='static.css') }}">
+    <title>Shopee QR Code</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
             <input type="text" id="text" name="text" required>
-            <div id="error-message" style="color: pink; display: none;"></div>
+            <div id="error-message" style="color: pink; display: none;">寄件編號必須至少15個字符</div>
             <div class="button-group">
                 <button type="submit">手動生成QR Code</button>
                 <button type="button" onclick="generateExcel()">生成Excel</button>
@@ -47,6 +47,6 @@
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

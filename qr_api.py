@@ -5,7 +5,6 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 qr_data_list = []
@@ -26,6 +25,7 @@ def generate_qr():
 
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+
     return jsonify(status='success', qr_data=qr_data_list)
 
 @app.route('/generate_excel')
@@ -37,26 +37,6 @@ def generate_excel():
     writer.save()
     output.seek(0)
     return send_file(output, attachment_filename='qr_codes.xlsx', as_attachment=True)
-
-@app.route('/generate_pdf', methods=['GET'])
-def generate_pdf():
-    images = []
-
-    for idx, item in enumerate(qr_data_list):
-        img_data = base64.b64decode(item['qr_code'].split(',')[1])
-        img = Image.open(io.BytesIO(img_data))
-
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-        draw.text((10, 180), f"Text: {item['text']}", fill="black", font=font)
-        draw.text((10, 200), f"Timestamp: {item['timestamp']}", fill="black", font=font)
-
-        images.append(img)
-
-    pdf_path = "qr_codes.pdf"
-    images[0].save(pdf_path, save_all=True, append_images=images[1:], format="PDF")
-
-    return send_file(pdf_path, attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
