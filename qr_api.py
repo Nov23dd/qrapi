@@ -19,6 +19,9 @@ def generate_qr():
     data = request.form['text']
     if not data:
         return jsonify(status='error', message='No data provided')
+    
+    if any(item['text'] == data for item in qr_data_list):
+        return jsonify(status='error', message='Duplicate entry detected')
 
     qr_code, timestamp = generate_qr_code(data)
     qr_data_list.append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
