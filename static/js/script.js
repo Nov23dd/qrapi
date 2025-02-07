@@ -11,6 +11,7 @@ $(document).ready(function() {
             $("#text").addClass('error');
             errorMessage.text("寄件編號必須至少15個字符").show();
             errorSound.play();
+            $("#text").val('');  // 清空輸入欄
             return;
         } else {
             $("#text").removeClass('error');
@@ -61,10 +62,6 @@ function updateTable(qr_data) {
 
 function updateCounter(counter) {
     $("#counter-display").text("目前處理的件數：" + counter);
-}
-
-function generateExcel() {
-    window.location.href = '/generate_excel';
 }
 
 function clearAll() {

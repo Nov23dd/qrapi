@@ -31,16 +31,6 @@ def generate_qr():
 
     return jsonify(status='success', qr_data=qr_data_list, counter=counter)
 
-@app.route('/generate_excel')
-def generate_excel():
-    df = pd.DataFrame(qr_data_list)
-    output = io.BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='QR Codes')
-    writer.save()
-    output.seek(0)
-    return send_file(output, attachment_filename='qr_codes.xlsx', as_attachment=True)
-
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
     global qr_data_list, counter
