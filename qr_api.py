@@ -5,8 +5,7 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-from PIL import Image
-from fpdf import FPDF
+import docraptor
 
 app = Flask(__name__)
 qr_data_list = []
@@ -41,28 +40,19 @@ def generate_excel():
 
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    
-    for idx, item in enumerate(qr_data_list):
-        img_data = base64.b64decode(item['qr_code'].split(',')[1])
-        img = Image.open(io.BytesIO(img_data))
-        img_path = f"temp_qr_{idx}.png"
-        img.save(img_path)
+    rendered = render_template('pdf_template.html', qr_data=qr_data_list, enumerate=enumerate)
 
-        pdf.image(img_path, x=10, y=pdf.get_y(), w=50)
-        pdf.ln(55)  # Move to the next line
-        pdf.set_x(10)
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Text: {item['text']}", ln=True)
-        pdf.cell(200, 10, txt=f"Timestamp: {item['timestamp']}", ln=True)
-        pdf.ln(10)  # Add a space before the next QR code
-    
-    output = io.BytesIO()
-    pdf.output(output)
-    output.seek(0)
-    return send_file(output, attachment_filename='qr_codes.pdf', as_attachment=True)
+    docraptor_client = docraptor.DocApi()
+    docraptor_client.api_client.configuration.username = 'lvW0gTDfsq2gUGsDaru6'
+
+    response = docraptor_client.create_doc({
+        "test": True,  # test documents are free but watermarked
+        "document_content": rendered,
+        "name": "qr_codes.pdf",
+        "document_type": "pdf",
+    })
+
+    return send_file(io.BytesIO(response), attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():

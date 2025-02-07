@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .qr-code {
+            margin-bottom: 20px;
+        }
+        .qr-code img {
+            width: 100px;
+            height: 100px;
+        }
+        .qr-code .text, .qr-code .timestamp {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code PDF</h1>
+    {% for idx, qr in enumerate(qr_data) %}
+        <div class="qr-code">
+            <img src="{{ qr.qr_code }}" alt="QR Code">
+            <div class="text">Text: {{ qr.text }}</div>
+            <div class="timestamp">Timestamp: {{ qr.timestamp }}</div>
+        </div>
+    {% endfor %}
+</body>
+</html>
