@@ -5,8 +5,7 @@ import io
 import base64
 from datetime import datetime
 import pandas as pd
-from PIL import Image
-from fpdf import FPDF
+from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 qr_data_list = []
@@ -41,28 +40,23 @@ def generate_excel():
 
 @app.route('/generate_pdf', methods=['GET'])
 def generate_pdf():
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf_bytes = io.BytesIO()
+    img_list = []
     
     for idx, item in enumerate(qr_data_list):
         img_data = base64.b64decode(item['qr_code'].split(',')[1])
         img = Image.open(io.BytesIO(img_data))
-        img_path = f"temp_qr_{idx}.png"
-        img.save(img_path)
 
-        pdf.image(img_path, x=10, y=pdf.get_y(), w=50)
-        pdf.ln(55)  # Move to the next line
-        pdf.set_x(10)
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Text: {item['text']}", ln=True)
-        pdf.cell(200, 10, txt=f"Timestamp: {item['timestamp']}", ln=True)
-        pdf.ln(10)  # Add a space before the next QR code
-    
-    output = io.BytesIO()
-    pdf.output(output)
-    output.seek(0)
-    return send_file(output, attachment_filename='qr_codes.pdf', as_attachment=True)
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+        draw.text((10, 180), f"Text: {item['text']}", fill="black", font=font)
+        draw.text((10, 200), f"Timestamp: {item['timestamp']}", fill="black", font=font)
+        
+        img_list.append(img)
+
+    img_list[0].save(pdf_bytes, format='PDF', save_all=True, append_images=img_list[1:])
+    pdf_bytes.seek(0)
+    return send_file(pdf_bytes, attachment_filename='qr_codes.pdf', as_attachment=True)
 
 @app.route('/clear_all', methods=['POST'])
 def clear_all():
