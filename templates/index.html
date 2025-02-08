@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        .error { 
+            border: 1px solid red; 
+        }
+        .success {
+            color: lightgreen;
+        }
+        .error-message {
+            color: pink; 
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -15,8 +27,8 @@
         <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
             <input type="text" id="text" name="text" required>
-            <div id="error-message" style="color: pink; display: none;">寄件編號必須至少15個字符</div>
-            <div id="success-message" style="color: lightgreen; display: none;">刷取成功</div>
+            <div id="error-message" class="error-message">寄件編號必須至少15個字符</div>
+            <div id="success-message" class="success">刷取成功</div>
             <div class="button-group">
                 <button type="submit">手動生成QR Code</button>
                 <button type="button" id="clear-all">全部清除</button>
@@ -54,6 +66,7 @@
         $(document).ready(function() {
             const username = "{{ username }}";  // 確保用戶名正確獲取
 
+            // 處理表單提交
             $("#generate-form").submit(function(e) {
                 e.preventDefault();
                 let text = $("#text").val();
@@ -62,35 +75,30 @@
                 let errorSound = $("#error-sound")[0];
                 let successSound = $("#success-sound")[0];
 
-                if (text.length != 15) {
-                    $("#text").addClass('error');
-                    errorMessage.text("寄件編號必須至少15個字符").show();
+                // 驗證文本長度
+                if (text.length !== 15) {
+                    showErrorMessage("寄件編號必須至少15個字符");
                     errorSound.play();
                     $("#text").val('');  // 清空輸入欄
                     return;
-                } else {
-                    $("#text").removeClass('error');
-                    errorMessage.hide();
-                }
+                } 
 
+                // 發送 POST 請求
                 $.post(`/generate_qr/${username}`, { text: text }, function(response) {
                     if (response.status === 'success') {
                         $("#text").val('');  // 清空輸入欄
-                        successMessage.text("刷取成功").show();
+                        showSuccessMessage("刷取成功");
                         successSound.play();
-                        setTimeout(function() {
-                            successMessage.hide();
-                        }, 2000);  // 2秒後隱藏提示信息
                         updateTable(response.qr_data);
                         updateCounter(response.counter);
                     } else {
-                        $("#text").val('');  // 清空輸入欄
-                        errorMessage.text(response.message).show();
+                        showErrorMessage(response.message);
                         errorSound.play();
                     }
                 });
             });
 
+            // 處理清除全部請求
             $("#clear-all").click(function() {
                 $.post(`/clear_all/${username}`, function(response) {
                     if (response.status === 'success') {
@@ -99,23 +107,43 @@
                     }
                 });
             });
+
+            // 處理匯出 PDF 功能
+            $("#export-pdf").click(function() {
+                $.post(`/export_pdf/${username}`, function(response) {
+                    if (response.status === 'success') {
+                        var link = document.createElement('a');
+                        link.href = 'data:application/pdf;base64,' + response.pdf;
+                        link.download = response.file_name;
+                        link.click();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                });
+            });
         });
 
-             // 匯出 PDF 的功能
-    $("#export-pdf").click(function() {
-        $.post(`/export_pdf/${username}`, function(response) {
-            if (response.status === 'success') {
-                var link = document.createElement('a');
-                link.href = 'data:application/pdf;base64,' + response.pdf;
-                link.download = response.file_name;
-                link.click();
-            } else {
-                alert('Error: ' + response.message);
-            }
-        });
-    });
-        ;
+        // 顯示錯誤消息
+        function showErrorMessage(message) {
+            let errorMessage = $("#error-message");
+            errorMessage.text(message).show();
+            $("#text").addClass('error');
+            setTimeout(function() {
+                errorMessage.hide();
+                $("#text").removeClass('error');
+            }, 3000);
+        }
 
+        // 顯示成功消息
+        function showSuccessMessage(message) {
+            let successMessage = $("#success-message");
+            successMessage.text(message).show();
+            setTimeout(function() {
+                successMessage.hide();
+            }, 2000);
+        }
+
+        // 更新表格
         function updateTable(qr_data) {
             let tableBody = $("#qr-code-table");
             tableBody.empty();
@@ -130,6 +158,7 @@
             });
         }
 
+        // 更新計數器
         function updateCounter(counter) {
             $("#counter-display").text("目前處理的件數：" + counter);
         }
