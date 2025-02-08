@@ -1,6 +1,10 @@
 $(document).ready(function() {
     const username = $("#username").val();
 
+    // 排序邏輯
+    var items = $('#qr-code-table tr');
+    $('#qr-code-table').append(items.get().reverse());
+
     $("#generate-form").submit(function(e) {
         e.preventDefault();
         let text = $("#text").val();
@@ -46,6 +50,20 @@ $(document).ready(function() {
             }
         });
     });
+
+    // 匯出 PDF 的功能
+    $("#export-pdf").click(function() {
+        $.post(`/export_pdf/${username}`, function(response) {
+            if (response.status === 'success') {
+                var link = document.createElement('a');
+                link.href = 'data:application/pdf;base64,' + response.pdf;
+                link.download = '刷貨頁面.pdf';
+                link.click();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        });
+    });
 });
 
 function updateTable(qr_data) {
@@ -60,6 +78,9 @@ function updateTable(qr_data) {
         </tr>`;
         tableBody.append(row);
     });
+    // 將新添加的項目顯示在最下面
+    var items = $('#qr-code-table tr');
+    $('#qr-code-table').append(items.get().reverse());
 }
 
 function updateCounter(counter) {
