@@ -2,9 +2,8 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background: url('https://example.com/path-to-your-clear-star-background-image.jpg') no-repeat center center fixed;
-    background-size: cover;
-    color: #e0e0e0;
+    background-color: #2c2c2c;
+    color: #ffffff;
     margin: 0;
     display: flex;
     justify-content: center;
@@ -14,58 +13,96 @@ body {
 }
 
 .container {
-    background: rgba(50, 50, 50, 0.8);
-    padding: 50px;
+    display: flex;
+    width: 80%;
+    max-width: 1200px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-    animation: fadeIn 1s ease-in-out;
+    overflow: hidden;
+    background-color: #3c3c3c;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.sidebar {
+    background-color: #4c4c4c;
+    width: 25%;
+    padding: 20px;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 10px 0;
+}
+
+.sidebar ul li a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+    display: block;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+
+.sidebar ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.main-content {
+    width: 75%;
+    padding: 40px;
+    text-align: center;
 }
 
 h1 {
     font-family: 'Playfair Display', serif;
     font-size: 36px;
     margin-bottom: 20px;
-    color: #d0d0d0;
 }
 
 h2 {
     font-size: 24px;
     margin-bottom: 30px;
-    color: #b0b0b0;
 }
 
-.user-selection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
+.user-selection select {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background-color: rgba(100, 100, 100, 0.6);
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
 }
 
-button {
-    background: rgba(255, 255, 255, 0.2);
-    color: #e0e0e0;
-    padding: 10px 20px;
-    margin: 10px;
+.user-selection select:hover {
+    background-color: rgba(100, 100, 100, 0.8);
+}
+
+.next-button {
+    background-color: rgba(40, 167, 69, 0.6);
+    color: #ffffff;
+    padding: 15px 30px;
+    margin-top: 30px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s, transform 0.3s;
-    font-size: 16px;
 }
 
-button:hover {
-    background: rgba(255, 255, 255, 0.3);
+.next-button:hover {
+    background-color: rgba(40, 167, 69, 0.8);
     transform: translateY(-2px);
-    box-shadow: 0px 0px 12px rgba(255, 255, 255, 0.5);
+    box-shadow: 0px 0px 12px rgba(40, 167, 69, 0.5);
 }
 
 a {
-    color: #d0d0d0;
+    color: #ffffff;
     text-decoration: none;
     margin-top: 20px;
     display: inline-block;
@@ -73,5 +110,5 @@ a {
 }
 
 a:hover {
-    color: #b0b0b0;
+    color: #cccccc;
 }

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, abort
 import qrcode
 import io
 import base64
@@ -30,6 +30,8 @@ def manage_users():
 @app.route('/add_user', methods=['POST'])
 def add_user():
     username = request.form['username']
+    if not username or len(username) < 3:
+        return jsonify(status='error', message='Invalid username')
     if username not in user_data:
         user_data[username] = []
         return jsonify(status='success', users=list(user_data.keys()))
@@ -39,12 +41,13 @@ def add_user():
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
     username = request.form['username']
+    if not username:
+        return jsonify(status='error', message='No username provided')
     if username in user_data:
         del user_data[username]
         return jsonify(status='success', users=list(user_data.keys()))
     else:
         return jsonify(status='error', message='User not found')
-
 
 @app.route('/user/<username>')
 def user_page(username):
@@ -59,24 +62,27 @@ def generate_qr(username):
     """生成 QR Code"""
     if username not in user_data:
         return jsonify(status='error', message='User not found')
-    
+
     data = request.form['text']
-    if not data:
-        return jsonify(status='error', message='No data provided')
-    
+    if not data or len(data) < 15:
+        return jsonify(status='error', message='Invalid data provided')
+
     if any(item['text'] == data for item in user_data[username]):
         return jsonify(status='error', message='Duplicate entry detected')
 
-    qr_code, timestamp = generate_qr_code(data)
-    user_data[username].append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+    try:
+        qr_code, timestamp = generate_qr_code(data)
+        user_data[username].append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
 
-    # 重新按時間順序排列 qr_data
-    user_data[username] = sorted(user_data[username], key=lambda x: x['timestamp'])
+        # 重新按時間順序排列 qr_data
+        user_data[username] = sorted(user_data[username], key=lambda x: x['timestamp'])
 
-    # 計算總共處理件數
-    total_items = len(user_data[username])
+        # 計算總共處理件數
+        total_items = len(user_data[username])
 
-    return jsonify(status='success', qr_data=user_data[username], counter=total_items)
+        return jsonify(status='success', qr_data=user_data[username], counter=total_items)
+    except Exception as e:
+        return jsonify(status='error', message=str(e))
 
 @app.route('/clear_all/<username>', methods=['POST'])
 def clear_all(username):
@@ -93,22 +99,25 @@ def export_pdf(username):
     if username not in user_data:
         return jsonify(status='error', message='User not found')
 
-    # 將刷貨頁面內容轉換為 HTML
-    html_content = render_template('pdf_template.html', qr_data=user_data[username], username=username)
+    try:
+        # 將刷貨頁面內容轉換為 HTML
+        html_content = render_template('pdf_template.html', qr_data=user_data[username], username=username)
 
-    # 使用 WeasyPrint 將 HTML 轉換為 PDF
-    pdf = HTML(string=html_content).write_pdf()
+        # 使用 WeasyPrint 將 HTML 轉換為 PDF
+        pdf = HTML(string=html_content).write_pdf()
 
-    # 生成日期和用戶名的檔案名稱
-    tz = pytz.timezone('Asia/Taipei')
-    current_date = datetime.now(tz).strftime("%y%m%d")  # 生成格式 250208
-    total_items = len(user_data[username])
-    file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
+        # 生成日期和用戶名的檔案名稱
+        tz = pytz.timezone('Asia/Taipei')
+        current_date = datetime.now(tz).strftime("%y%m%d")  # 生成格式 250208
+        total_items = len(user_data[username])
+        file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
-    # 將 PDF 編碼為 base64
-    pdf_base64 = base64.b64encode(pdf).decode('utf-8')
+        # 將 PDF 編碼為 base64
+        pdf_base64 = base64.b64encode(pdf).decode('utf-8')
 
-    return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
+        return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
+    except Exception as e:
+        return jsonify(status='error', message=str(e))
 
 def generate_qr_code(data):
     """生成 QR Code 圖片和時間戳"""

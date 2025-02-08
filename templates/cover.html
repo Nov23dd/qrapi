@@ -8,14 +8,41 @@
 </head>
 <body>
     <div class="container">
-        <h1>歡迎來到 Mu's Shopee</h1>
-        <h2>請選擇您的名稱</h2>
-        <div class="user-selection">
-            {% for user in users %}
-            <button onclick="window.location.href='/user/{{ user }}'">{{ user }}</button>
-            {% endfor %}
+        <div class="sidebar">
+            <ul>
+                <li><a href="/">主畫面</a></li>
+                <li><a href="#" onclick="navigateToScan()">掃描</a></li>
+                <li><a href="#">掃描紀錄</a></li>
+                <li><a href="/manage_users">管理使用者</a></li>
+            </ul>
         </div>
-        <a href="/manage_users">管理使用者</a>
+        <div class="main-content">
+            <h1>歡迎來到 Mu's Shopee</h1>
+            <h2>請選擇您的名稱</h2>
+            <div class="user-selection">
+                <select id="user-select">
+                    {% for user in users %}
+                    <option value="{{ user }}">{{ user }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="next-button" onclick="selectUser()">下一步，開始掃描</button>
+        </div>
     </div>
+    <script>
+        function selectUser() {
+            const user = document.getElementById("user-select").value;
+            window.location.href = `/user/${user}`;
+        }
+
+        function navigateToScan() {
+            const user = document.getElementById("user-select").value;
+            if (user) {
+                window.location.href = `/user/${user}`;
+            } else {
+                alert('請先選擇一個使用者');
+            }
+        }
+    </script>
 </body>
 </html>
