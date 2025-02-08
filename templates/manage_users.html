@@ -9,40 +9,64 @@
 <body>
     <div class="container">
         <h1>管理使用者</h1>
+        <div class="user-list">
+            <h2>現有使用者</h2>
+            <ul id="user-list">
+                {% for user in users %}
+                <li>{{ user }}</li>
+                {% endfor %}
+            </ul>
+        </div>
         <form id="add-user-form">
-            <label for="username">新增使用者名稱：</label>
+            <label for="username">新增使用者：</label>
             <input type="text" id="username" name="username" required>
             <button type="submit">新增</button>
         </form>
-        <h2>現有使用者</h2>
-        <ul id="user-list">
-            {% for user in users %}
-            <li>{{ user }} <button onclick="deleteUser('{{ user }}')">刪除</button></li>
-            {% endfor %}
-        </ul>
-        <a href="/">返回選擇頁面</a>
+        <form id="delete-user-form">
+            <label for="delete-username">刪除使用者：</label>
+            <input type="text" id="delete-username" name="username" required>
+            <button type="submit">刪除</button>
+        </form>
+        <a href="/">返回封面</a>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $("#add-user-form").submit(function(e) {
-            e.preventDefault();
-            let username = $("#username").val();
-            $.post("/add_user", { username: username }, function(response) {
-                if (response.status === 'success') {
-                    let newUser = `<li>${username} <button onclick="deleteUser('${username}')">刪除</button></li>`;
-                    $("#user-list").append(newUser);
-                    $("#username").val('');
-                }
+        $(document).ready(function() {
+            // 新增使用者
+            $("#add-user-form").submit(function(e) {
+                e.preventDefault();
+                let username = $("#username").val();
+                $.post("/add_user", { username: username }, function(response) {
+                    if (response.status === 'success') {
+                        updateUserList(response.users);
+                    } else {
+                        alert(response.message);
+                    }
+                });
             });
-        });
 
-        function deleteUser(username) {
-            $.post("/delete_user", { username: username }, function(response) {
-                if (response.status === 'success') {
-                    location.reload();
-                }
+            // 刪除使用者
+            $("#delete-user-form").submit(function(e) {
+                e.preventDefault();
+                let username = $("#delete-username").val();
+                $.post("/delete_user", { username: username }, function(response) {
+                    if (response.status === 'success') {
+                        updateUserList(response.users);
+                    } else {
+                        alert(response.message);
+                    }
+                });
             });
-        }
+
+            // 更新用戶列表
+            function updateUserList(users) {
+                let userList = $("#user-list");
+                userList.empty();
+                users.forEach(user => {
+                    userList.append(`<li>${user}</li>`);
+                });
+            }
+        });
     </script>
 </body>
 </html>

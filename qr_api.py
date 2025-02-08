@@ -20,7 +20,6 @@ user_data = {
 
 @app.route('/')
 def cover():
-    """渲染封面頁面"""
     return render_template('cover.html', users=user_data.keys())
 
 @app.route('/manage_users')
@@ -30,23 +29,22 @@ def manage_users():
 
 @app.route('/add_user', methods=['POST'])
 def add_user():
-    """添加用戶"""
     username = request.form['username']
     if username not in user_data:
         user_data[username] = []
-        return jsonify(status='success')
+        return jsonify(status='success', users=list(user_data.keys()))
     else:
         return jsonify(status='error', message='User already exists')
 
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
-    """刪除用戶"""
     username = request.form['username']
     if username in user_data:
         del user_data[username]
-        return jsonify(status='success')
+        return jsonify(status='success', users=list(user_data.keys()))
     else:
         return jsonify(status='error', message='User not found')
+
 
 @app.route('/user/<username>')
 def user_page(username):
