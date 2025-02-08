@@ -85,7 +85,17 @@
             });
         }
 
-        function generateQrCode() {
+        function debounce(func, delay) {
+            let debounceTimer;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        const generateQrCode = debounce(() => {
             const username = "{{ username }}";
             let text = $("#text").val();
             let errorMessage = $("#error-message");
@@ -102,18 +112,18 @@
 
             // 發送 POST 請求
             $.post(`/generate_qr/${username}`, { text: text }, function(response) {
-                    if (response.status === 'success') {
-                        $("#text").val('');  // 清空輸入欄
-                        showSuccessMessage("刷取成功");
-                        successSound.play();
-                        updateTable(response.qr_data);
-                        updateCounter(response.counter);
-                    } else {
-                        showErrorMessage(response.message);
-                        errorSound.play();
-                    }
-                });
-            };
+                if (response.status === 'success') {
+                    $("#text").val('');  // 清空輸入欄
+                    showSuccessMessage("刷取成功");
+                    successSound.play();  // 播放成功音效
+                    updateTable(response.qr_data);
+                    updateCounter(response.counter);
+                } else {
+                    showErrorMessage(response.message);
+                    errorSound.play();
+                }
+            });
+        }, 300);
 
         function showErrorMessage(message) {
             let errorMessage = $("#error-message");
