@@ -1,10 +1,6 @@
 $(document).ready(function() {
     const username = $("#username").val();
 
-    // 排序邏輯
-    var items = $('#qr-code-table tr');
-    $('#qr-code-table').append(items.get().reverse());
-
     $("#generate-form").submit(function(e) {
         e.preventDefault();
         let text = $("#text").val();
@@ -32,7 +28,7 @@ $(document).ready(function() {
                 setTimeout(function() {
                     successMessage.hide();
                 }, 2000);  // 2秒後隱藏提示信息
-                updateTable(response.qr_data);
+                appendNewRow(response.qr_data[response.qr_data.length - 1], response.counter);
                 updateCounter(response.counter);
             } else {
                 $("#text").val('');  // 清空輸入欄
@@ -78,9 +74,17 @@ function updateTable(qr_data) {
         </tr>`;
         tableBody.append(row);
     });
-    // 將新添加的項目顯示在最下面
-    var items = $('#qr-code-table tr');
-    $('#qr-code-table').append(items.get().reverse());
+}
+
+function appendNewRow(data, counter) {
+    let tableBody = $("#qr-code-table");
+    let row = `<tr>
+        <td>${counter}</td>
+        <td>${data.text}</td>
+        <td><img src="${data.qr_code}" alt="QR Code"></td>
+        <td>${data.timestamp}</td>
+    </tr>`;
+    tableBody.append(row);
 }
 
 function updateCounter(counter) {

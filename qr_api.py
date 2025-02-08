@@ -7,6 +7,10 @@ import pytz
 from weasyprint import HTML
 
 app = Flask(__name__)
+
+# 將 enumerate 函數添加到模板環境中
+app.jinja_env.globals.update(enumerate=enumerate)
+
 user_data = {
     "Alice": [],
     "Bob": [],
