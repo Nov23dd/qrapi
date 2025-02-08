@@ -5,82 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mu's Shopee - {{ username }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 80%;
-            margin: auto;
-            overflow: hidden;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #333;
-        }
-        .button-group, #return-button {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-        button, .btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-        }
-        .btn-primary {
-            background-color: #28a745;
-            color: white;
-        }
-        .btn-secondary {
-            background-color: #dc3545;
-            color: white;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background-color: white;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f8f9fa;
-            color: #333;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        .message {
-            text-align: center;
-            margin-top: 10px;
-        }
-        .error {
-            color: red;
-        }
-        .success {
-            color: green;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <h1>{{ username }}'s Shopee</h1>
-        <div id="return-button">
-            <a href="/" class="btn btn-primary">返回封面</a>
-        </div>
         <div id="counter-display">目前處理的件數：{{ counter }}</div>
         <form id="generate-form" onsubmit="generateQrCode(); return false;">
             <label for="text">寄件編號：</label>
@@ -88,8 +16,8 @@
             <div id="error-message" class="message error">寄件編號必須至少15個字符</div>
             <div id="success-message" class="message success">刷取成功</div>
             <div class="button-group">
-                <button type="submit" class="btn-primary">手動生成QR Code</button>
-                <button type="button" id="clear-all" class="btn-secondary">全部清除</button>
+                <button type="submit">手動生成QR Code</button>
+                <button type="button" id="clear-all">全部清除</button>
             </div>
         </form>
         <audio id="error-sound" src="{{ url_for('static', filename='error-sound.wav') }}"></audio>
@@ -117,7 +45,7 @@
                 </tbody>
             </table>
         </div>
-        <button id="export-pdf" class="btn-primary">匯出PDF</button>
+        <button id="export-pdf">匯出PDF</button>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
@@ -181,7 +109,6 @@
             });
         });
 
-        // 顯示錯誤消息
         function showErrorMessage(message) {
             let errorMessage = $("#error-message");
             errorMessage.text(message).show();
@@ -192,7 +119,6 @@
             }, 3000);
         }
 
-        // 顯示成功消息
         function showSuccessMessage(message) {
             let successMessage = $("#success-message");
             successMessage.text(message).show();
@@ -201,7 +127,6 @@
             }, 2000);
         }
 
-        // 更新表格
         function updateTable(qr_data) {
             let tableBody = $("#qr-code-table");
             tableBody.empty();
@@ -216,7 +141,6 @@
             });
         }
 
-        // 更新計數器
         function updateCounter(counter) {
             $("#counter-display").text("目前處理的件數：" + counter);
         }

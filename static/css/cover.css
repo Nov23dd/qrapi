@@ -4,7 +4,7 @@ body {
     font-family: 'Roboto', sans-serif;
     background: url('https://example.com/path-to-your-clear-star-background-image.jpg') no-repeat center center fixed;
     background-size: cover;
-    color: #ffffff;
+    color: #e0e0e0;
     margin: 0;
     display: flex;
     justify-content: center;
@@ -30,13 +30,13 @@ h1 {
     font-family: 'Playfair Display', serif;
     font-size: 36px;
     margin-bottom: 20px;
-    color: #f0f0f0;
+    color: #d0d0d0;
 }
 
 h2 {
     font-size: 24px;
     margin-bottom: 30px;
-    color: #cccccc;
+    color: #b0b0b0;
 }
 
 .user-selection {
@@ -48,7 +48,7 @@ h2 {
 
 button {
     background: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    color: #e0e0e0;
     padding: 10px 20px;
     margin: 10px;
     border: none;
@@ -65,7 +65,7 @@ button:hover {
 }
 
 a {
-    color: #ffffff;
+    color: #d0d0d0;
     text-decoration: none;
     margin-top: 20px;
     display: inline-block;
@@ -73,5 +73,5 @@ a {
 }
 
 a:hover {
-    color: #cccccc;
+    color: #b0b0b0;
 }
