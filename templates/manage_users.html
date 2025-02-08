@@ -39,6 +39,7 @@
                 $.post("/add_user", { username: username }, function(response) {
                     if (response.status === 'success') {
                         updateUserList(response.users);
+                        $("#username").val('');  // 清空輸入欄
                     } else {
                         alert(response.message);
                     }
@@ -52,6 +53,7 @@
                 $.post("/delete_user", { username: username }, function(response) {
                     if (response.status === 'success') {
                         updateUserList(response.users);
+                        $("#delete-username").val('');  // 清空輸入欄
                     } else {
                         alert(response.message);
                     }
