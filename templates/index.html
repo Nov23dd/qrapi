@@ -47,18 +47,13 @@
                 </tbody>
             </table>
         </div>
-        <button id="export-pdf">匯出 PDF</button>
+        <button id="export-pdf">匯出PDF</button>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        const username = "{{ username }}";
-
         $(document).ready(function() {
-            // 排序邏輯
-            var items = $('#qr-code-table tr');
-            $('#qr-code-table').append(items.get().reverse());
+            const username = "{{ username }}";  // 確保用戶名正確獲取
 
-            // 處理生成 QR Code 表單提交
             $("#generate-form").submit(function(e) {
                 e.preventDefault();
                 let text = $("#text").val();
@@ -86,8 +81,11 @@
                         setTimeout(function() {
                             successMessage.hide();
                         }, 2000);  // 2秒後隱藏提示信息
-                        updateTable(response.qr_data);
+                        appendNewRow(response.qr_data[response.qr_data.length - 1], response.counter);
                         updateCounter(response.counter);
+                    } else if (response.message === 'Duplicate entry detected') {
+                        errorMessage.text("重複的包裹代碼").show();
+                        errorSound.play();
                     } else {
                         $("#text").val('');  // 清空輸入欄
                         errorMessage.text(response.message).show();
@@ -96,7 +94,6 @@
                 });
             });
 
-            // 處理清除所有按鈕
             $("#clear-all").click(function() {
                 $.post(`/clear_all/${username}`, function(response) {
                     if (response.status === 'success') {
@@ -112,7 +109,7 @@
                     if (response.status === 'success') {
                         var link = document.createElement('a');
                         link.href = 'data:application/pdf;base64,' + response.pdf;
-                        link.download = '刷貨頁面.pdf';
+                        link.download = response.file_name;
                         link.click();
                     } else {
                         alert('Error: ' + response.message);
@@ -133,9 +130,17 @@
                 </tr>`;
                 tableBody.append(row);
             });
-            // 將新添加的項目顯示在最下面
-            var items = $('#qr-code-table tr');
-            $('#qr-code-table').append(items.get().reverse());
+        }
+
+        function appendNewRow(data, counter) {
+            let tableBody = $("#qr-code-table");
+            let row = `<tr>
+                <td>${counter}</td>
+                <td>${data.text}</td>
+                <td><img src="${data.qr_code}" alt="QR Code"></td>
+                <td>${data.timestamp}</td>
+            </tr>`;
+            tableBody.append(row);
         }
 
         function updateCounter(counter) {

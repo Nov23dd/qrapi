@@ -46,7 +46,7 @@ def delete_user():
 @app.route('/user/<username>')
 def user_page(username):
     if username in user_data:
-        return render_template('index.html', qr_data=user_data[username], enumerate=enumerate, counter=len(user_data[username]), username=username)
+        return render_template('index.html', qr_data=user_data[username], counter=len(user_data[username]), username=username)
     else:
         return "User not found", 404
 
@@ -65,13 +65,19 @@ def generate_qr(username):
     qr_code, timestamp = generate_qr_code(data)
     user_data[username].append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
 
-    return jsonify(status='success', qr_data=user_data[username], counter=len(user_data[username]))
+    # 重新按時間順序排列 qr_data
+    user_data[username] = sorted(user_data[username], key=lambda x: x['timestamp'])
+
+    # 計算總共處理件數
+    total_items = len(user_data[username])
+
+    return jsonify(status='success', qr_data=user_data[username], counter=total_items)
 
 @app.route('/clear_all/<username>', methods=['POST'])
 def clear_all(username):
     if username in user_data:
         user_data[username] = []
-        return jsonify(status='success')
+        return jsonify(status='success', counter=0)
     else:
         return jsonify(status='error', message='User not found')
 

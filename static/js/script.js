@@ -28,8 +28,11 @@ $(document).ready(function() {
                 setTimeout(function() {
                     successMessage.hide();
                 }, 2000);  // 2秒後隱藏提示信息
-                appendNewRow(response.qr_data[response.qr_data.length - 1], response.counter);
+                updateTable(response.qr_data);
                 updateCounter(response.counter);
+            } else if (response.message === 'Duplicate entry detected') {
+                errorMessage.text("重複的包裹代碼").show();
+                errorSound.play();
             } else {
                 $("#text").val('');  // 清空輸入欄
                 errorMessage.text(response.message).show();
