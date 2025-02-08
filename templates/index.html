@@ -22,7 +22,7 @@
             <div id="counter-display">目前處理的件數：{{ counter }}</div>
             <form id="generate-form" onsubmit="generateQrCode(); return false;">
                 <label for="text">寄件編號：</label>
-                <input type="text" id="text" name="text" required>
+                <input type="text" id="text" name="text" required x-inputmode="latin" autocomplete="off">
                 <div id="error-message" class="message error">寄件編號必須至少15個字符</div>
                 <div id="success-message" class="message success">刷取成功</div>
                 <button type="submit">手動生成QR Code</button>
@@ -56,6 +56,8 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        let successSound = document.getElementById("success-sound");
+
         function navigateToScan() {
             const username = "{{ username }}";
             window.location.href = `/user/${username}`;
@@ -101,8 +103,7 @@
             let errorMessage = $("#error-message");
             let successMessage = $("#success-message");
             let errorSound = $("#error-sound")[0];
-            let successSound = $("#success-sound")[0];
-            
+
             if (text.length !== 15) {
                 showErrorMessage("寄件編號必須至少15個字符");
                 errorSound.play();
