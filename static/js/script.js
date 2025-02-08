@@ -1,6 +1,7 @@
 $(document).ready(function() {
-    const username = $("#username").val();
+    const username = "{{ username }}";  // 確保用戶名正確獲取
 
+    // 處理表單提交
     $("#generate-form").submit(function(e) {
         e.preventDefault();
         let text = $("#text").val();
@@ -9,38 +10,30 @@ $(document).ready(function() {
         let errorSound = $("#error-sound")[0];
         let successSound = $("#success-sound")[0];
 
-        if (text.length < 15) {
-            $("#text").addClass('error');
-            errorMessage.text("寄件編號必須至少15個字符").show();
+        // 驗證文本長度
+        if (text.length !== 15) {
+            showErrorMessage("寄件編號必須至少15個字符");
             errorSound.play();
             $("#text").val('');  // 清空輸入欄
             return;
-        } else {
-            $("#text").removeClass('error');
-            errorMessage.hide();
-        }
+        } 
 
+        // 發送 POST 請求
         $.post(`/generate_qr/${username}`, { text: text }, function(response) {
             if (response.status === 'success') {
                 $("#text").val('');  // 清空輸入欄
-                successMessage.text("刷取成功").show();
+                showSuccessMessage("刷取成功");
                 successSound.play();
-                setTimeout(function() {
-                    successMessage.hide();
-                }, 2000);  // 2秒後隱藏提示信息
                 updateTable(response.qr_data);
                 updateCounter(response.counter);
-            } else if (response.message === 'Duplicate entry detected') {
-                errorMessage.text("重複的包裹代碼").show();
-                errorSound.play();
             } else {
-                $("#text").val('');  // 清空輸入欄
-                errorMessage.text(response.message).show();
+                showErrorMessage(response.message);
                 errorSound.play();
             }
         });
     });
 
+    // 處理清除全部請求
     $("#clear-all").click(function() {
         $.post(`/clear_all/${username}`, function(response) {
             if (response.status === 'success') {
@@ -50,7 +43,7 @@ $(document).ready(function() {
         });
     });
 
-    // 匯出 PDF 的功能
+    // 處理匯出 PDF 功能
     $("#export-pdf").click(function() {
         $.post(`/export_pdf/${username}`, function(response) {
             if (response.status === 'success') {
@@ -65,6 +58,27 @@ $(document).ready(function() {
     });
 });
 
+// 顯示錯誤消息
+function showErrorMessage(message) {
+    let errorMessage = $("#error-message");
+    errorMessage.text(message).show();
+    $("#text").addClass('error');
+    setTimeout(function() {
+        errorMessage.hide();
+        $("#text").removeClass('error');
+    }, 3000);
+}
+
+// 顯示成功消息
+function showSuccessMessage(message) {
+    let successMessage = $("#success-message");
+    successMessage.text(message).show();
+    setTimeout(function() {
+        successMessage.hide();
+    }, 2000);
+}
+
+// 更新表格
 function updateTable(qr_data) {
     let tableBody = $("#qr-code-table");
     tableBody.empty();
@@ -79,17 +93,7 @@ function updateTable(qr_data) {
     });
 }
 
-function appendNewRow(data, counter) {
-    let tableBody = $("#qr-code-table");
-    let row = `<tr>
-        <td>${counter}</td>
-        <td>${data.text}</td>
-        <td><img src="${data.qr_code}" alt="QR Code"></td>
-        <td>${data.timestamp}</td>
-    </tr>`;
-    tableBody.append(row);
-}
-
+// 更新計數器
 function updateCounter(counter) {
     $("#counter-display").text("目前處理的件數：" + counter);
 }

@@ -11,6 +11,7 @@ app = Flask(__name__)
 # 將 enumerate 函數添加到模板環境中
 app.jinja_env.globals.update(enumerate=enumerate)
 
+# 初始化用戶數據
 user_data = {
     "Alice": [],
     "Bob": [],
@@ -19,14 +20,17 @@ user_data = {
 
 @app.route('/')
 def cover():
+    """渲染封面頁面"""
     return render_template('cover.html', users=user_data.keys())
 
 @app.route('/manage_users')
 def manage_users():
+    """渲染用戶管理頁面"""
     return render_template('manage_users.html', users=user_data.keys())
 
 @app.route('/add_user', methods=['POST'])
 def add_user():
+    """添加用戶"""
     username = request.form['username']
     if username not in user_data:
         user_data[username] = []
@@ -36,6 +40,7 @@ def add_user():
 
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
+    """刪除用戶"""
     username = request.form['username']
     if username in user_data:
         del user_data[username]
@@ -45,6 +50,7 @@ def delete_user():
 
 @app.route('/user/<username>')
 def user_page(username):
+    """渲染用戶頁面"""
     if username in user_data:
         return render_template('index.html', qr_data=user_data[username], counter=len(user_data[username]), username=username)
     else:
@@ -52,6 +58,7 @@ def user_page(username):
 
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
+    """生成 QR Code"""
     if username not in user_data:
         return jsonify(status='error', message='User not found')
     
@@ -75,6 +82,7 @@ def generate_qr(username):
 
 @app.route('/clear_all/<username>', methods=['POST'])
 def clear_all(username):
+    """清除所有 QR Code"""
     if username in user_data:
         user_data[username] = []
         return jsonify(status='success', counter=0)
@@ -83,6 +91,7 @@ def clear_all(username):
 
 @app.route('/export_pdf/<username>', methods=['POST'])
 def export_pdf(username):
+    """匯出 PDF"""
     if username not in user_data:
         return jsonify(status='error', message='User not found')
 
@@ -104,6 +113,7 @@ def export_pdf(username):
     return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
 
 def generate_qr_code(data):
+    """生成 QR Code 圖片和時間戳"""
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
