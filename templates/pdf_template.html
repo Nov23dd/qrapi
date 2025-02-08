@@ -3,31 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF</title>
+    <title>QR Code Export</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .qr-code {
-            margin-bottom: 20px;
+        table, th, td {
+            border: 1px solid black;
         }
-        .qr-code img {
-            width: 100px;
-            height: 100px;
+        th, td {
+            padding: 10px;
+            text-align: left;
         }
-        .qr-code .text, .qr-code .timestamp {
-            margin-top: 10px;
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
-    <h1>QR Code PDF</h1>
-    {% for idx, qr in enumerate(qr_data) %}
-        <div class="qr-code">
-            <img src="{{ qr.qr_code }}" alt="QR Code">
-            <div class="text">Text: {{ qr.text }}</div>
-            <div class="timestamp">Timestamp: {{ qr.timestamp }}</div>
-        </div>
-    {% endfor %}
+    <h1>{{ username }}'s QR Codes</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>包裹代碼</th>
+                <th>QR Code</th>
+                <th>生成日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for index, data in enumerate(qr_data) %}
+            <tr>
+                <td>{{ index + 1 }}</td>
+                <td>{{ data.text }}</td>
+                <td><img src="{{ data.qr_code }}" alt="QR Code"></td>
+                <td>{{ data.timestamp }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </body>
 </html>

@@ -101,19 +101,19 @@
             });
         });
 
-            // 匯出 PDF 的功能
-            $("#export-pdf").click(function() {
-                $.post(`/export_pdf/${username}`, function(response) {
-                    if (response.status === 'success') {
-                        var link = document.createElement('a');
-                        link.href = 'data:application/pdf;base64,' + response.pdf;
-                        link.download = response.file_name;
-                        link.click();
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                });
-            });
+             // 匯出 PDF 的功能
+    $("#export-pdf").click(function() {
+        $.post(`/export_pdf/${username}`, function(response) {
+            if (response.status === 'success') {
+                var link = document.createElement('a');
+                link.href = 'data:application/pdf;base64,' + response.pdf;
+                link.download = response.file_name;
+                link.click();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        });
+    });
         ;
 
         function updateTable(qr_data) {
