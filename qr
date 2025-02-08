@@ -1,4 +1,4 @@
-#!/Users/linnea./myenv/bin/python3.13
+#!/Users/linnea./myenv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys
