@@ -102,8 +102,7 @@
             let successMessage = $("#success-message");
             let errorSound = $("#error-sound")[0];
             let successSound = $("#success-sound")[0];
-            errorSound.pause();
-            successSound.pause();
+            
             if (text.length !== 15) {
                 showErrorMessage("寄件編號必須至少15個字符");
                 errorSound.play();
@@ -116,7 +115,10 @@
                 if (response.status === 'success') {
                     $("#text").val('');  // 清空輸入欄
                     showSuccessMessage("刷取成功");
+                    successSound.pause();  // 停止之前的成功音效
+                    successSound.currentTime = 0;  // 重置音效播放時間
                     successSound.play();  // 播放成功音效
+
                     updateTable(response.qr_data);
                     updateCounter(response.counter);
                 } else {
