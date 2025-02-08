@@ -85,13 +85,7 @@
             });
         }
 
-        function handleInput() {
-            const text = $("#text").val();
-            if (text.length === 15) {
-                generateQrCode();
-            }
-        }
-
+        
         const generateQrCode = () => {
             const username = "{{ username }}";
             let text = $("#text").val();
