@@ -22,7 +22,7 @@
             <div id="counter-display">目前處理的件數：{{ counter }}</div>
             <form id="generate-form" onsubmit="generateQrCode(); return false;">
                 <label for="text">寄件編號：</label>
-                <input type="text" id="text" name="text" oninput="handleInput()" required>
+                <input type="text" id="text" name="text" required>
                 <div id="error-message" class="message error">寄件編號必須至少15個字符</div>
                 <div id="success-message" class="message success">刷取成功</div>
                 <button type="submit">手動生成QR Code</button>
@@ -85,8 +85,17 @@
             });
         }
 
-        
-        const generateQrCode = () => {
+        function debounce(func, delay) {
+            let debounceTimer;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        const generateQrCode = debounce(() => {
             const username = "{{ username }}";
             let text = $("#text").val();
             let errorMessage = $("#error-message");
@@ -110,12 +119,12 @@
                     updateTable(response.qr_data);
                     updateCounter(response.counter);
                 } else {
-                    $("#text").val('');  // 清空輸入欄
+                    $("#text").val('');  //清空輸入欄
                     showErrorMessage(response.message);
                     errorSound.play();
                 }
             });
-        };
+        }, 300);
 
         function showErrorMessage(message) {
             let errorMessage = $("#error-message");
