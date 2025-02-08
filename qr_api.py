@@ -4,7 +4,7 @@ import io
 import base64
 from datetime import datetime
 import pytz
-import pdfkit
+from weasyprint import HTML
 
 app = Flask(__name__)
 user_data = {
@@ -79,13 +79,19 @@ def export_pdf(username):
     # 將刷貨頁面內容轉換為 HTML
     html_content = render_template('pdf_template.html', qr_data=user_data[username], username=username)
 
-    # 將 HTML 轉換為 PDF
-    pdf = pdfkit.from_string(html_content, False)
+    # 使用 WeasyPrint 將 HTML 轉換為 PDF
+    pdf = HTML(string=html_content).write_pdf()
+
+    # 生成日期和用戶名的檔案名稱
+    tz = pytz.timezone('Asia/Taipei')
+    current_date = datetime.now(tz).strftime("%y%m%d")  # 生成格式 250208
+    total_items = len(user_data[username])
+    file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
     # 將 PDF 編碼為 base64
     pdf_base64 = base64.b64encode(pdf).decode('utf-8')
-    
-    return jsonify(status='success', pdf=pdf_base64)
+
+    return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
 
 def generate_qr_code(data):
     qr = qrcode.QRCode(

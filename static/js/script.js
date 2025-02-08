@@ -57,7 +57,7 @@ $(document).ready(function() {
             if (response.status === 'success') {
                 var link = document.createElement('a');
                 link.href = 'data:application/pdf;base64,' + response.pdf;
-                link.download = '刷貨頁面.pdf';
+                link.download = response.file_name;
                 link.click();
             } else {
                 alert('Error: ' + response.message);
