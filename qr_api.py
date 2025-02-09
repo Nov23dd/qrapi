@@ -81,7 +81,8 @@ def delete_user():
 def user_page(username):
     if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return "User not found", 404
-    return render_template('index.html', qr_data=user_data.get(username, []), counter=len(user_data.get(username, [])), username=username)
+    qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
+    return render_template('index.html', qr_data=qr_data, counter=len(qr_data), username=username)
 
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
@@ -92,20 +93,19 @@ def generate_qr(username):
     if not data or len(data) < 15:
         return jsonify(status='error', message='Invalid data provided')
 
-    if any(item['text'] == data for item in user_data.get(username, [])):
+    if query_db('SELECT * FROM qr_codes WHERE username = ? AND text = ?', (username, data), one=True):
         return jsonify(status='error', message='Duplicate entry detected')
 
     try:
         qr_code, timestamp = generate_qr_code(data)
-        user_data.setdefault(username, []).append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+        db = get_db()
+        db.execute('INSERT INTO qr_codes (username, text, qr_code, timestamp) VALUES (?, ?, ?, ?)', (username, data, qr_code, timestamp))
+        db.commit()
 
-        # 重新按時間順序排列 qr_data
-        user_data[username] = sorted(user_data[username], key=lambda x: x['timestamp'])
+        qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
+        total_items = len(qr_data)
 
-        # 計算總共處理件數
-        total_items = len(user_data[username])
-
-        return jsonify(status='success', qr_data=user_data[username], counter=total_items)
+        return jsonify(status='success', qr_data=qr_data, counter=total_items)
     except Exception as e:
         return jsonify(status='error', message=str(e))
 
@@ -114,7 +114,10 @@ def clear_all(username):
     if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
 
-    user_data[username] = []
+    db = get_db()
+    db.execute('DELETE FROM qr_codes WHERE username = ?', (username,))
+    db.commit()
+
     return jsonify(status='success', counter=0)
 
 @app.route('/export_pdf/<username>', methods=['POST'])
@@ -123,13 +126,14 @@ def export_pdf(username):
         return jsonify(status='error', message='User not found')
 
     try:
-        html_content = render_template('pdf_template.html', qr_data=user_data.get(username, []), username=username)
+        qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
+        html_content = render_template('pdf_template.html', qr_data=qr_data, username=username)
 
         pdf = HTML(string=html_content).write_pdf()
 
         tz = pytz.timezone('Asia/Taipei')
         current_date = datetime.now(tz).strftime("%y%m%d")
-        total_items = len(user_data.get(username, []))
+        total_items = len(qr_data)
         file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
         pdf_base64 = base64.b64encode(pdf).decode('utf-8')

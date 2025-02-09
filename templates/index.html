@@ -96,7 +96,6 @@
                 debounceTimer = setTimeout(() => func.apply(context, args), delay);
             };
         }
-
         const generateQrCode = debounce(() => {
             const username = "{{ username }}";
             let text = $("#text").val();
