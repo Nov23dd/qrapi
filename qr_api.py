@@ -29,7 +29,6 @@ def init_db():
             db.cursor().executescript(f.read())
         db.commit()
         print("Database initialized successfully")
-
 def query_db(query, args=(), one=False):
     cur = get_db().execute(query, args)
     rv = cur.fetchall()
