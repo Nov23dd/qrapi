@@ -14,14 +14,14 @@ logging.basicConfig(filename='/Users/linnea./myenv/logs/app.log', level=logging.
 
 app = Flask(__name__)
 
-# 配置資料庫連接
+# 配置資料庫連接，使用環境變量
 def get_db():
     if 'db' not in g:
         g.db = pymysql.connect(
-            host='34.80.121.49',  # 替換為您的 Cloud SQL 執行個體的公有 IP 地址
-            user='postgres',      # 替換為您的資料庫用戶名
-            password='qsaxzc3120',  # 替換為您的資料庫密碼
-            database='nov-23dd'  # 替換為您的資料庫名稱
+            host=os.getenv('DB_HOST', '34.80.121.49'),  # 使用環境變量
+            user=os.getenv('DB_USER', 'postgres'),      # 使用環境變量
+            password=os.getenv('DB_PASSWORD', 'qsaxzc3120'),  # 使用環境變量
+            database=os.getenv('DB_NAME', 'nov-23dd')  # 使用環境變量
         )
     return g.db
 
