@@ -1,78 +1,103 @@
-from flask import Flask, request, render_template, jsonify, abort
+from flask import Flask, request, render_template, jsonify, g
 import qrcode
 import io
 import base64
 from datetime import datetime
 import pytz
 from weasyprint import HTML
+import sqlite3
 
 app = Flask(__name__)
+DATABASE = 'user_data.db'
 
-# 將 enumerate 函數添加到模板環境中
-app.jinja_env.globals.update(enumerate=enumerate)
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+    return db
 
-# 初始化用戶數據
-user_data = {
-    "Alice": [],
-    "Bob": [],
-    "Charlie": []
-}
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+
+def query_db(query, args=(), one=False):
+    cur = get_db().execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
+
+def add_user_to_db(username):
+    db = get_db()
+    db.execute('INSERT INTO users (username) VALUES (?)', (username,))
+    db.commit()
+
+def delete_user_from_db(username):
+    db = get_db()
+    db.execute('DELETE FROM users WHERE username = ?', (username,))
+    db.commit()
 
 @app.route('/')
 def cover():
-    return render_template('cover.html', users=user_data.keys())
+    users = [row[0] for row in query_db('SELECT username FROM users')]
+    return render_template('cover.html', users=users)
 
 @app.route('/manage_users')
 def manage_users():
-    """渲染用戶管理頁面"""
-    return render_template('manage_users.html', users=user_data.keys())
+    users = [row[0] for row in query_db('SELECT username FROM users')]
+    return render_template('manage_users.html', users=users)
 
 @app.route('/add_user', methods=['POST'])
 def add_user():
     username = request.form['username']
     if not username or len(username) < 3:
-        return jsonify(status='error', message='Invalid username')
-    if username not in user_data:
-        user_data[username] = []
-        return jsonify(status='success', users=list(user_data.keys()))
-    else:
+        return jsonify(status='error', message='Invalid username. Username must be at least 3 characters long.')
+    if query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User already exists')
+    add_user_to_db(username)
+    users = [row[0] for row in query_db('SELECT username FROM users')]
+    return jsonify(status='success', users=users)
 
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
     username = request.form['username']
     if not username:
         return jsonify(status='error', message='No username provided')
-    if username in user_data:
-        del user_data[username]
-        return jsonify(status='success', users=list(user_data.keys()))
-    else:
+    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
+    delete_user_from_db(username)
+    users = [row[0] for row in query_db('SELECT username FROM users')]
+    return jsonify(status='success', users=users)
 
 @app.route('/user/<username>')
 def user_page(username):
-    """渲染用戶頁面"""
-    if username in user_data:
-        return render_template('index.html', qr_data=user_data[username], counter=len(user_data[username]), username=username)
-    else:
+    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return "User not found", 404
+    return render_template('index.html', qr_data=user_data.get(username, []), counter=len(user_data.get(username, [])), username=username)
 
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
-    """生成 QR Code"""
-    if username not in user_data:
+    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
 
     data = request.form['text']
     if not data or len(data) < 15:
         return jsonify(status='error', message='Invalid data provided')
 
-    if any(item['text'] == data for item in user_data[username]):
+    if any(item['text'] == data for item in user_data.get(username, [])):
         return jsonify(status='error', message='Duplicate entry detected')
 
     try:
         qr_code, timestamp = generate_qr_code(data)
-        user_data[username].append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
+        user_data.setdefault(username, []).append({'text': data, 'qr_code': qr_code, 'timestamp': timestamp})
 
         # 重新按時間順序排列 qr_data
         user_data[username] = sorted(user_data[username], key=lambda x: x['timestamp'])
@@ -86,33 +111,27 @@ def generate_qr(username):
 
 @app.route('/clear_all/<username>', methods=['POST'])
 def clear_all(username):
-    """清除所有 QR Code"""
-    if username in user_data:
-        user_data[username] = []
-        return jsonify(status='success', counter=0)
-    else:
+    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
+
+    user_data[username] = []
+    return jsonify(status='success', counter=0)
 
 @app.route('/export_pdf/<username>', methods=['POST'])
 def export_pdf(username):
-    """匯出 PDF"""
-    if username not in user_data:
+    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
 
     try:
-        # 將刷貨頁面內容轉換為 HTML
-        html_content = render_template('pdf_template.html', qr_data=user_data[username], username=username)
+        html_content = render_template('pdf_template.html', qr_data=user_data.get(username, []), username=username)
 
-        # 使用 WeasyPrint 將 HTML 轉換為 PDF
         pdf = HTML(string=html_content).write_pdf()
 
-        # 生成日期和用戶名的檔案名稱
         tz = pytz.timezone('Asia/Taipei')
-        current_date = datetime.now(tz).strftime("%y%m%d")  # 生成格式 250208
-        total_items = len(user_data[username])
+        current_date = datetime.now(tz).strftime("%y%m%d")
+        total_items = len(user_data.get(username, []))
         file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
-        # 將 PDF 編碼為 base64
         pdf_base64 = base64.b64encode(pdf).decode('utf-8')
 
         return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
@@ -120,7 +139,6 @@ def export_pdf(username):
         return jsonify(status='error', message=str(e))
 
 def generate_qr_code(data):
-    """生成 QR Code 圖片和時間戳"""
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -141,4 +159,5 @@ def generate_qr_code(data):
     return qr_code, timestamp
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True)
