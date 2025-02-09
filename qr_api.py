@@ -32,8 +32,11 @@ def init_db():
                 db.cursor().executescript(f.read())
             db.commit()
             print("Database initialized successfully")
+            # 添加初始化數據
+            add_user_to_db("default_user")
     except Exception as e:
         print(f"Error initializing database: {e}")
+
 
 # 顯式初始化資料庫
 if not os.path.exists(DATABASE):
