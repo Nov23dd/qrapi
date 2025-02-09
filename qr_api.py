@@ -25,8 +25,22 @@ def close_connection(exception):
 def init_db():
     with app.app_context():
         db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
+        db.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE
+        );
+        ''')
+        db.execute('''
+        CREATE TABLE IF NOT EXISTS qr_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            text TEXT NOT NULL,
+            qr_code TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (username) REFERENCES users (username)
+        );
+        ''')
         db.commit()
         print("Database initialized successfully")
 def query_db(query, args=(), one=False):
