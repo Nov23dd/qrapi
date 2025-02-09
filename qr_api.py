@@ -141,7 +141,7 @@ def generate_qr(username):
         print(f"Error generating QR code: {e}")
         return jsonify(status='error', message=str(e))
 
-@app.route('/clear_all/<username>', methods['POST'])
+@app.route('/clear_all/<username>', methods=['POST'])
 def clear_all(username):
     if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
