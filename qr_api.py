@@ -15,9 +15,9 @@ def get_db():
     if 'db' not in g:
         g.db = pymysql.connect(
             host='34.80.121.49',  # 替換為您的 Cloud SQL 執行個體的公有 IP 地址
-            user='nov-23dd',      # 替換為您的資料庫用戶名
+            user='postgres',      # 替換為您的資料庫用戶名
             password='qsaxzc3120',  # 替換為您的資料庫密碼
-            database='ShopeeMu'  # 替換為您的資料庫名稱
+            database='nov-23dd'  # 替換為您的資料庫名稱
         )
     return g.db
 
