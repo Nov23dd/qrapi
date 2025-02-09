@@ -15,6 +15,7 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
+    db.row_factory = sqlite3.Row
     return db
 
 @app.teardown_appcontext
@@ -67,7 +68,7 @@ def delete_user_from_db(username):
 @app.route('/')
 def cover():
     try:
-        users = [row[0] for row in query_db('SELECT username FROM users')]
+        users = [row['username'] for row in query_db('SELECT username FROM users')]
         return render_template('cover.html', users=users)
     except Exception as e:
         print(f"Error fetching users: {e}")
@@ -76,7 +77,7 @@ def cover():
 @app.route('/manage_users')
 def manage_users():
     try:
-        users = [row[0] for row in query_db('SELECT username FROM users')]
+        users = [row['username'] for row in query_db('SELECT username FROM users')]
         return render_template('manage_users.html', users=users)
     except Exception as e:
         print(f"Error fetching users: {e}")
@@ -90,7 +91,7 @@ def add_user():
     if query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User already exists')
     add_user_to_db(username)
-    users = [row[0] for row in query_db('SELECT username FROM users')]
+    users = [row['username'] for row in query_db('SELECT username FROM users')]
     return jsonify(status='success', users=users)
 
 @app.route('/delete_user', methods=['POST'])
@@ -101,7 +102,7 @@ def delete_user():
     if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
         return jsonify(status='error', message='User not found')
     delete_user_from_db(username)
-    users = [row[0] for row in query_db('SELECT username FROM users')]
+    users = [row['username'] for row in query_db('SELECT username FROM users')]
     return jsonify(status='success', users=users)
 
 @app.route('/user/<username>')
