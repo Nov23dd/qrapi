@@ -28,6 +28,7 @@ def init_db():
         with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
+        print("Database initialized successfully")
 
 def query_db(query, args=(), one=False):
     cur = get_db().execute(query, args)
@@ -46,13 +47,21 @@ def delete_user_from_db(username):
     db.commit()
 @app.route('/')
 def cover():
-    users = [row[0] for row in query_db('SELECT username FROM users')]
-    return render_template('cover.html', users=users)
+    try:
+        users = [row[0] for row in query_db('SELECT username FROM users')]
+        return render_template('cover.html', users=users)
+    except Exception as e:
+        print(f"Error fetching users: {e}")
+        return str(e), 500
 
 @app.route('/manage_users')
 def manage_users():
-    users = [row[0] for row in query_db('SELECT username FROM users')]
-    return render_template('manage_users.html', users=users)
+    try:
+        users = [row[0] for row in query_db('SELECT username FROM users')]
+        return render_template('manage_users.html', users=users)
+    except Exception as e:
+        print(f"Error fetching users: {e}")
+        return str(e), 500
 
 @app.route('/add_user', methods=['POST'])
 def add_user():
@@ -78,10 +87,14 @@ def delete_user():
 
 @app.route('/user/<username>')
 def user_page(username):
-    if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
-        return "User not found", 404
-    qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
-    return render_template('index.html', qr_data=qr_data, counter=len(qr_data), username=username)
+    try:
+        if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
+            return "User not found", 404
+        qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
+        return render_template('index.html', qr_data=qr_data, counter=len(qr_data), username=username)
+    except Exception as e:
+        print(f"Error fetching QR codes: {e}")
+        return str(e), 500
 
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
@@ -106,6 +119,7 @@ def generate_qr(username):
 
         return jsonify(status='success', qr_data=qr_data, counter=total_items)
     except Exception as e:
+        print(f"Error generating QR code: {e}")
         return jsonify(status='error', message=str(e))
 
 @app.route('/clear_all/<username>', methods=['POST'])
@@ -139,6 +153,7 @@ def export_pdf(username):
 
         return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
     except Exception as e:
+        print(f"Error exporting PDF: {e}")
         return jsonify(status='error', message=str(e))
 
 def generate_qr_code(data):
