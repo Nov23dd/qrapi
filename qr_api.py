@@ -7,6 +7,10 @@ import pytz
 from weasyprint import HTML
 import pymysql
 import os
+import logging
+
+# 設置日誌文件
+logging.basicConfig(filename='/Users/linnea./myenv/logs/app.log', level=logging.DEBUG)
 
 app = Flask(__name__)
 
@@ -54,7 +58,7 @@ def cover():
         users = [row[0] for row in query_db('SELECT username FROM users')]
         return render_template('cover.html', users=users)
     except Exception as e:
-        print(f"Error fetching users: {e}")
+        app.logger.error(f"Error fetching users: {e}")
         return str(e), 500
 
 @app.route('/manage_users')
@@ -63,7 +67,7 @@ def manage_users():
         users = [row[0] for row in query_db('SELECT username FROM users')]
         return render_template('manage_users.html', users=users)
     except Exception as e:
-        print(f"Error fetching users: {e}")
+        app.logger.error(f"Error fetching users: {e}")
         return str(e), 500
 
 @app.route('/add_user', methods=['POST'])
@@ -96,7 +100,7 @@ def user_page(username):
         qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = %s', (username,))
         return render_template('index.html', qr_data=qr_data, counter=len(qr_data), username=username)
     except Exception as e:
-        print(f"Error fetching QR codes: {e}")
+        app.logger.error(f"Error fetching QR codes: {e}")
         return str(e), 500
 
 @app.route('/generate_qr/<username>', methods=['POST'])
@@ -124,7 +128,7 @@ def generate_qr(username):
 
         return jsonify(status='success', qr_data=qr_data, counter=total_items)
     except Exception as e:
-        print(f"Error generating QR code: {e}")
+        app.logger.error(f"Error generating QR code: {e}")
         return jsonify(status='error', message=str(e))
 
 @app.route('/clear_all/<username>', methods=['POST'])
@@ -160,7 +164,7 @@ def export_pdf(username):
 
         return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
     except Exception as e:
-        print(f"Error exporting PDF: {e}")
+        app.logger.error(f"Error exporting PDF: {e}")
         return jsonify(status='error', message=str(e))
 
 def generate_qr_code(data):
