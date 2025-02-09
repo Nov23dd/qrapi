@@ -41,12 +41,12 @@
                         </tr>
                     </thead>
                     <tbody id="qr-code-table">
-                        {% for index, data in enumerate(qr_data) %}
+                        {% for index in range(qr_data|length) %}
                         <tr>
                             <td>{{ index + 1 }}</td>
-                            <td>{{ data.text }}</td>
-                            <td><img src="{{ data.qr_code }}" alt="QR Code"></td>
-                            <td>{{ data.timestamp }}</td>
+                            <td>{{ qr_data[index].text }}</td>
+                            <td><img src="{{ qr_data[index].qr_code }}" alt="QR Code"></td>
+                            <td>{{ qr_data[index].timestamp }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -96,6 +96,7 @@
                 debounceTimer = setTimeout(() => func.apply(context, args), delay);
             };
         }
+
         const generateQrCode = debounce(() => {
             const username = "{{ username }}";
             let text = $("#text").val();

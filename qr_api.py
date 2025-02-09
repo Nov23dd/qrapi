@@ -6,6 +6,7 @@ from datetime import datetime
 import pytz
 from weasyprint import HTML
 import sqlite3
+import os
 
 app = Flask(__name__)
 DATABASE = 'user_data.db'
@@ -23,41 +24,45 @@ def close_connection(exception):
         db.close()
 
 def init_db():
-    with app.app_context():
-        db = get_db()
-        db.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE
-        );
-        ''')
-        db.execute('''
-        CREATE TABLE IF NOT EXISTS qr_codes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            text TEXT NOT NULL,
-            qr_code TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            FOREIGN KEY (username) REFERENCES users (username)
-        );
-        ''')
-        db.commit()
-        print("Database initialized successfully")
+    try:
+        with app.app_context():
+            db = get_db()
+            with app.open_resource('schema.sql', mode='r') as f:
+                db.cursor().executescript(f.read())
+            db.commit()
+            print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
+# 顯式初始化資料庫
+if not os.path.exists(DATABASE):
+    print("Initializing the database...")
+    init_db()
 def query_db(query, args=(), one=False):
-    cur = get_db().execute(query, args)
-    rv = cur.fetchall()
-    cur.close()
-    return (rv[0] if rv else None) if one else rv
+    try:
+        cur = get_db().execute(query, args)
+        rv = cur.fetchall()
+        cur.close()
+        return (rv[0] if rv else None) if one else rv
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return None
 
 def add_user_to_db(username):
-    db = get_db()
-    db.execute('INSERT INTO users (username) VALUES (?)', (username,))
-    db.commit()
+    try:
+        db = get_db()
+        db.execute('INSERT INTO users (username) VALUES (?)', (username,))
+        db.commit()
+    except Exception as e:
+        print(f"Error adding user to db: {e}")
 
 def delete_user_from_db(username):
-    db = get_db()
-    db.execute('DELETE FROM users WHERE username = ?', (username,))
-    db.commit()
+    try:
+        db = get_db()
+        db.execute('DELETE FROM users WHERE username = ?', (username,))
+        db.commit()
+    except Exception as e:
+        print(f"Error deleting user from db: {e}")
 
 @app.route('/')
 def cover():
@@ -191,5 +196,4 @@ def generate_qr_code(data):
     return qr_code, timestamp
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
