@@ -45,6 +45,7 @@ def delete_user_from_db(username):
     db = get_db()
     db.execute('DELETE FROM users WHERE username = ?', (username,))
     db.commit()
+
 @app.route('/')
 def cover():
     try:
