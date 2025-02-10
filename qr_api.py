@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, g
+from flask import Flask, request, render_template, jsonify, g, make_response
 import qrcode
 import io
 import base64
@@ -7,6 +7,7 @@ import pytz
 from weasyprint import HTML
 import sqlite3
 import os
+import urllib.parse
 
 app = Flask(__name__)
 DATABASE = 'user_data.db'
@@ -39,6 +40,7 @@ def init_db():
 if not os.path.exists(DATABASE):
     print("Initializing the database...")
     init_db()
+
 def query_db(query, args=(), one=False):
     try:
         cur = get_db().execute(query, args)
@@ -78,7 +80,8 @@ def cover():
 def manage_users():
     try:
         users = [row['username'] for row in query_db('SELECT username FROM users')]
-        return render_template('manage_users.html', users=users)
+        users_with_index = list(enumerate(users, start=1))  # 使用 enumerate 來排序
+        return render_template('manage_users.html', users=users_with_index)
     except Exception as e:
         print(f"Error fetching users: {e}")
         return str(e), 500
@@ -93,7 +96,6 @@ def add_user():
     add_user_to_db(username)
     users = [row['username'] for row in query_db('SELECT username FROM users')]
     return jsonify(status='success', users=users)
-
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
     username = request.form['username']
@@ -169,9 +171,11 @@ def export_pdf(username):
         total_items = len(qr_data)
         file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
-        pdf_base64 = base64.b64encode(pdf).decode('utf-8')
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f"attachment; filename={urllib.parse.quote(file_name)}"
 
-        return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
+        return response
     except Exception as e:
         print(f"Error exporting PDF: {e}")
         return jsonify(status='error', message=str(e))
@@ -195,6 +199,11 @@ def generate_qr_code(data):
     tz = pytz.timezone('Asia/Taipei')
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     return qr_code, timestamp
+
+# 添加自定義過濾器
+@app.template_filter('enumerate')
+def enumerate_filter(iterable, start=0):
+    return enumerate(iterable, start=start)
 
 if __name__ == '__main__':
     app.run(debug=True)
