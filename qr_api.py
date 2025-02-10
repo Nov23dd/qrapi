@@ -172,14 +172,17 @@ def export_pdf(username):
         total_items = len(qr_data)
         file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
-        response = make_response(pdf)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f"attachment; filename={urllib.parse.quote(file_name)}"
+        # 將 PDF 編碼為 base64 字符串
+        pdf_base64 = base64.b64encode(pdf).decode('utf-8')
+
+        response = make_response(jsonify(status='success', pdf=pdf_base64, file_name=file_name))
+        response.headers['Content-Type'] = 'application/json'
 
         return response
     except Exception as e:
         print(f"Error exporting PDF: {e}")
         return jsonify(status='error', message=str(e))
+
 
 def generate_qr_code(data):
     qr = qrcode.QRCode(

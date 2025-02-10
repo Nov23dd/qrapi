@@ -64,18 +64,19 @@
         }
 
         function exportPDF() {
-            const username = "{{ username }}";
-            $.post(`/export_pdf/${username}`, function(response) {
-                if (response.status === 'success') {
-                    var link = document.createElement('a');
-                    link.href = 'data:application/pdf;base64,' + response.pdf;
-                    link.download = response.file_name;
-                    link.click();
-                } else {
-                    alert('Error: ' + response.message);
+        const username = "{{ username }}";
+        $.post(`/export_pdf/${username}`, function(response) {
+            if (response.status === 'success') {
+                var link = document.createElement('a');
+                link.href = 'data:application/pdf;base64,' + response.pdf;
+                link.download = response.file_name;
+                link.click();
+            } else {
+                alert('Error: ' + response.message);
                 }
             });
         }
+
 
         function clearAll() {
             const username = "{{ username }}";
