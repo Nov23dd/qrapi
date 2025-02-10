@@ -96,6 +96,7 @@ def add_user():
     add_user_to_db(username)
     users = [row['username'] for row in query_db('SELECT username FROM users')]
     return jsonify(status='success', users=users)
+
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
     username = request.form['username']
