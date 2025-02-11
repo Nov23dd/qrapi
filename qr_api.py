@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, jsonify, g, make_response
 import qrcode
 import io
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from weasyprint import HTML
 import sqlite3
@@ -118,7 +118,6 @@ def user_page(username):
     except Exception as e:
         print(f"Error fetching QR codes: {e}")
         return str(e), 500
-
 @app.route('/generate_qr/<username>', methods=['POST'])
 def generate_qr(username):
     if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
@@ -135,10 +134,16 @@ def generate_qr(username):
         qr_code, timestamp = generate_qr_code(data)
         db = get_db()
         db.execute('INSERT INTO qr_codes (username, text, qr_code, timestamp) VALUES (?, ?, ?, ?)', (username, data, qr_code, timestamp))
+        db.execute('INSERT INTO user_data (username, timestamp, qr_data) VALUES (?, ?, ?)', (username, timestamp, data)) # 新增刷取紀錄
         db.commit()
 
         qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', (username,))
         total_items = len(qr_data)
+
+        # 刪除超過一週的刷取紀錄
+        one_week_ago = datetime.now() - timedelta(days=7)
+        db.execute('DELETE FROM user_data WHERE timestamp < ?', (one_week_ago.strftime("%Y-%m-%d %H:%M:%S"),))
+        db.commit()
 
         return jsonify(status='success', qr_data=qr_data, counter=total_items)
     except Exception as e:
@@ -172,7 +177,6 @@ def export_pdf(username):
         total_items = len(qr_data)
         file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
 
-        # 將 PDF 編碼為 base64 字符串
         pdf_base64 = base64.b64encode(pdf).decode('utf-8')
 
         response = make_response(jsonify(status='success', pdf=pdf_base64, file_name=file_name))
@@ -182,7 +186,6 @@ def export_pdf(username):
     except Exception as e:
         print(f"Error exporting PDF: {e}")
         return jsonify(status='error', message=str(e))
-
 
 def generate_qr_code(data):
     qr = qrcode.QRCode(
@@ -204,10 +207,24 @@ def generate_qr_code(data):
     timestamp = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
     return qr_code, timestamp
 
+@app.route('/scan_records/<username>', methods=['GET'])
+def scan_records(username):
+    try:
+        if not query_db('SELECT * FROM users WHERE username = ?', (username,), one=True):
+            return jsonify(status='error', message='User not found')
+
+        one_week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+        records = query_db('SELECT * FROM user_data WHERE username = ? AND timestamp >= ?', (username, one_week_ago))
+
+        return render_template('scan_records.html', records=records, username=username)
+    except Exception as e:
+        print(f"Error fetching scan records: {e}")
+        return str(e), 500
+
 # 添加自定義過濾器
 @app.template_filter('enumerate')
 def enumerate_filter(iterable, start=0):
     return enumerate(iterable, start=start)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run

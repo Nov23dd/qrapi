@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mu's Shopee - 掃描紀錄</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/scan_records.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <ul>
+                <li><a href="/">主畫面</a></li>
+                <li><a href="#" onclick="navigateToScan()">掃描</a></li>
+                <li><a href="/manage_users">管理使用者</a></li>
+                <li><a href="/scan_records/{{ username }}">掃描紀錄</a></li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <h1>{{ username }} 的掃描紀錄</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>掃描時間</th>
+                        <th>掃描資料</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ record.timestamp }}</td>
+                        <td>{{ record.qr_data }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function navigateToScan() {
+            const username = "{{ username }}";
+            window.location.href = `/user/${username}`;
+        }
+    </script>
+</body>
+</html>
