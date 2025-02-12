@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, g, make_response, current_app
+from flask import Flask, request, render_template, jsonify, g, current_app
 import qrcode
 import io
 import base64
@@ -94,6 +94,9 @@ def delete_user_from_db(username):
     db = get_db()
     db.execute('DELETE FROM users WHERE username = ?', [username])
     db.commit()
+
+def row_to_dict(row):
+    return {key: row[key] for key in row.keys()}
 
 def paginate_data(data, page_size):
     """Split data into chunks of a specified page size."""
@@ -191,6 +194,7 @@ def create_app(config_class=Config):
                 'SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', 
                 [username]
             )
+            qr_data = [row_to_dict(row) for row in qr_data]
             return render_template('index.html', 
                                  qr_data=qr_data, 
                                  counter=len(qr_data), 
@@ -219,6 +223,7 @@ def create_app(config_class=Config):
 
             qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?',
                              [username])
+            qr_data = [row_to_dict(row) for row in qr_data]
             
             # Clean up old records
             one_week_ago = datetime.now() - timedelta(days=7)
@@ -260,6 +265,7 @@ def create_app(config_class=Config):
                 'SELECT * FROM user_data WHERE username = ? AND timestamp >= ?',
                 [username, one_week_ago.strftime("%Y-%m-%d %H:%M:%S")]
             )
+            records = [row_to_dict(row) for row in records]
             
             return render_template('scan_records.html', 
                                  records=records, 
@@ -275,6 +281,7 @@ def create_app(config_class=Config):
 
         try:
             qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', [username])
+            qr_data = [row_to_dict(row) for row in qr_data]
             tz = pytz.timezone(app.config['TIMEZONE'])
             for item in qr_data:
                 db = get_db()
