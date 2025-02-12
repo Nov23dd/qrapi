@@ -63,7 +63,7 @@
                 if (response.status === 'success') {
                     updateTable(response.records);
                 } else {
-                    alert('獲取紀錄失敗: ' + response.error);
+                    alert('獲取紀錄失敗: ' + response.message);
                 }
             });
         }
@@ -74,7 +74,7 @@
                 if (response.status === 'success') {
                     fetchRecordsByDate();
                 } else {
-                    alert('刪除紀錄失敗: ' + response.error);
+                    alert('刪除紀錄失敗: ' + response.message);
                 }
             });
         }

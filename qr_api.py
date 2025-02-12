@@ -191,7 +191,7 @@ def create_app(config_class=Config):
                 return jsonify(error="User not found"), 404
             
             qr_data = query_db(
-                'SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?', 
+                'SELECT id, text, qr_code, timestamp FROM qr_codes WHERE username = ?', 
                 [username]
             )
             qr_data = [row_to_dict(row) for row in qr_data]
@@ -221,7 +221,7 @@ def create_app(config_class=Config):
                       [username, timestamp, data])
             db.commit()
 
-            qr_data = query_db('SELECT text, qr_code, timestamp FROM qr_codes WHERE username = ?',
+            qr_data = query_db('SELECT id, text, qr_code, timestamp FROM qr_codes WHERE username = ?',
                              [username])
             qr_data = [row_to_dict(row) for row in qr_data]
             
