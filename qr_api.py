@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, g, current_app
+from flask import Flask, request, render_template, jsonify, g, current_app, send_file
 import qrcode
 import io
 import base64
@@ -310,8 +310,9 @@ def create_app(config_class=Config):
             current_date = datetime.now(tz).strftime("%y%m%d")
             total_items = len(qr_data)
             file_name = f"{current_date}蝦皮預刷ll{total_items}.pdf"
-            pdf_base64 = base64.b64encode(combined_pdf).decode('utf-8')
-            return jsonify(status='success', pdf=pdf_base64, file_name=file_name)
+            pdf_io = io.BytesIO(combined_pdf)
+            pdf_io.seek(0)
+            return send_file(pdf_io, mimetype='application/pdf', as_attachment=True, download_name=file_name)
         except Exception as e:
             app.logger.error(f"Error exporting PDF: {e}")
             return jsonify(status='error', message=f"Error exporting PDF: {e}")
