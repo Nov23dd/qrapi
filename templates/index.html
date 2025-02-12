@@ -67,7 +67,8 @@
             $.post(`/scan_complete/${username}`, function(response) {
                 if (response.status === 'success') {
                     const link = document.createElement('a');
-                    link.href = URL.createObjectURL(new Blob([response.pdf], { type: 'application/pdf' }));
+                    const pdfBlob = new Blob([new Uint8Array(atob(response.pdf).split("").map(char => char.charCodeAt(0)))], {type: 'application/pdf'});
+                    link.href = URL.createObjectURL(pdfBlob);
                     link.download = response.file_name;
                     link.click();
                     alert('掃描完成，匯出PDF成功');
