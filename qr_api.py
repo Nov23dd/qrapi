@@ -279,10 +279,7 @@ def create_app(config_class=Config):
             )
             dates = [row['date'] for row in dates]
             
-            return render_template('scan_records.html', 
-                                 records=records, 
-                                 dates=dates, 
-                                 username=username)
+            return jsonify(status='success', records=records, dates=dates)
         except Exception as e:
             app.logger.error(f"Error fetching scan records: {e}")
             return jsonify(error="Internal server error"), 500
