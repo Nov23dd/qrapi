@@ -253,11 +253,11 @@ def create_app(config_class=Config):
     @app.route('/scan_records/<username>', methods=['GET'])
     def scan_records(username):
         if not validate_username(username):
-            return jsonify(error="Invalid username"), 400
+            return jsonify(status='error', message='Invalid username')
             
         try:
             if not query_db('SELECT * FROM users WHERE username = ?', [username], one=True):
-                return jsonify(error="User not found"), 404
+                return jsonify(status='error', message='User not found')
 
             date = request.args.get('date')
             if date:
@@ -282,7 +282,7 @@ def create_app(config_class=Config):
             return jsonify(status='success', records=records, dates=dates)
         except Exception as e:
             app.logger.error(f"Error fetching scan records: {e}")
-            return jsonify(error="Internal server error"), 500
+            return jsonify(status='error', message='Internal server error')
 
     @app.route('/delete_record/<username>', methods=['POST'])
     def delete_record(username):
@@ -350,3 +350,4 @@ app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=True)
+``` ▋
