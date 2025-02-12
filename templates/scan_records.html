@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mu's Shopee - 掃描紀錄</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/scan_records.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/static.css') }}">
 </head>
 <body>
     <div class="container">
@@ -12,36 +12,85 @@
             <ul>
                 <li><a href="/">主畫面</a></li>
                 <li><a href="#" onclick="navigateToScan()">掃描</a></li>
-                <li><a href="/manage_users">管理使用者</a></li>
                 <li><a href="/scan_records/{{ username }}">掃描紀錄</a></li>
+                <li><a href="/manage_users">管理使用者</a></li>
             </ul>
         </div>
         <div class="main-content">
             <h1>{{ username }} 的掃描紀錄</h1>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>掃描時間</th>
-                        <th>掃描資料</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for record in records %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ record.timestamp }}</td>
-                        <td>{{ record.qr_data }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <label for="date-select">選擇日期：</label>
+            <select id="date-select" onchange="fetchRecordsByDate()">
+                {% for date in dates %}
+                <option value="{{ date }}">{{ date }}</option>
+                {% endfor %}
+            </select>
+            <div class="table-section">
+                <h2>掃描紀錄：</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>掃描時間</th>
+                            <th>掃描資料</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scan-records-table">
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ record.timestamp }}</td>
+                            <td>{{ record.qr_data }}</td>
+                            <td><button onclick="deleteRecord({{ record.id }})">刪除</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         function navigateToScan() {
             const username = "{{ username }}";
             window.location.href = `/user/${username}`;
+        }
+
+        function fetchRecordsByDate() {
+            const username = "{{ username }}";
+            const selectedDate = $("#date-select").val();
+            $.get(`/scan_records/${username}?date=${selectedDate}`, function(response) {
+                if (response.status === 'success') {
+                    updateTable(response.records);
+                } else {
+                    alert('獲取紀錄失敗: ' + response.message);
+                }
+            });
+        }
+
+        function deleteRecord(recordId) {
+            const username = "{{ username }}";
+            $.post(`/delete_record/${username}`, { id: recordId }, function(response) {
+                if (response.status === 'success') {
+                    fetchRecordsByDate();
+                } else {
+                    alert('刪除紀錄失敗: ' + response.message);
+                }
+            });
+        }
+
+        function updateTable(records) {
+            let tableBody = $("#scan-records-table");
+            tableBody.empty();
+            records.forEach((record, index) => {
+                let row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${record.timestamp}</td>
+                    <td>${record.qr_data}</td>
+                    <td><button onclick="deleteRecord(${record.id})">刪除</button></td>
+                </tr>`;
+                tableBody.append(row);
+            });
         }
     </script>
 </body>

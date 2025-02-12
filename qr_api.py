@@ -259,20 +259,51 @@ def create_app(config_class=Config):
             if not query_db('SELECT * FROM users WHERE username = ?', [username], one=True):
                 return jsonify(error="User not found"), 404
 
-            tz = pytz.timezone(app.config['TIMEZONE'])
-            one_week_ago = datetime.now(tz) - timedelta(days=7)
-            records = query_db(
-                'SELECT * FROM user_data WHERE username = ? AND timestamp >= ?',
-                [username, one_week_ago.strftime("%Y-%m-%d %H:%M:%S")]
-            )
+            date = request.args.get('date')
+            if date:
+                records = query_db(
+                    'SELECT * FROM user_data WHERE username = ? AND DATE(timestamp) = DATE(?)',
+                    [username, date]
+                )
+            else:
+                records = query_db(
+                    'SELECT * FROM user_data WHERE username = ?',
+                    [username]
+                )
             records = [row_to_dict(row) for row in records]
+            
+            # Get unique dates
+            dates = query_db(
+                'SELECT DISTINCT DATE(timestamp) as date FROM user_data WHERE username = ? ORDER BY date DESC',
+                [username]
+            )
+            dates = [row['date'] for row in dates]
             
             return render_template('scan_records.html', 
                                  records=records, 
+                                 dates=dates, 
                                  username=username)
         except Exception as e:
             app.logger.error(f"Error fetching scan records: {e}")
             return jsonify(error="Internal server error"), 500
+
+    @app.route('/delete_record/<username>', methods=['POST'])
+    def delete_record(username):
+        if not validate_username(username):
+            return jsonify(status='error', message='Invalid username')
+
+        record_id = request.form.get('id')
+        if not record_id:
+            return jsonify(status='error', message='Record ID not provided')
+
+        try:
+            db = get_db()
+            db.execute('DELETE FROM user_data WHERE id = ? AND username = ?', [record_id, username])
+            db.commit()
+            return jsonify(status='success')
+        except Exception as e:
+            app.logger.error(f"Error deleting record: {e}")
+            return jsonify(status='error', message='Database error')
 
     @app.route('/scan_complete/<username>', methods=['POST'])
     def scan_complete(username):
