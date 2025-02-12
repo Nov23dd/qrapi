@@ -12,8 +12,7 @@
             <ul>
                 <li><a href="/">主畫面</a></li>
                 <li><a href="#" onclick="navigateToScan()">掃描</a></li>
-                <li><a href="#" onclick="exportPDF()">匯出PDF</a></li>
-                <li><a href="#" onclick="clearAll()">全部清除</a></li>
+                <li><a href="#" onclick="scanComplete()">掃描完成</a></li>
                 <li><a href="/manage_users">管理使用者</a></li>
             </ul>
         </div>
@@ -63,17 +62,15 @@
             window.location.href = `/user/${username}`;
         }
 
-        function exportPDF() {
-        const username = "{{ username }}";
-        $.post(`/export_pdf/${username}`, function(response) {
+        function scanComplete() {
+            const username = "{{ username }}";
+        $.post(`/scan_complete/${username}`, function(response) {
             if (response.status === 'success') {
-                var link = document.createElement('a');
-                link.href = 'data:application/pdf;base64,' + response.pdf;
-                link.download = response.file_name;
-                link.click();
+                alert('掃描完成，匯出PDF成功');
+                clearAll();  // 自動清除所有紀錄
             } else {
-                alert('Error: ' + response.message);
-                }
+                alert('匯出PDF失敗: ' + response.message);
+            }
             });
         }
 
@@ -130,28 +127,11 @@
                 }
             });
         }, 300);
-        function showErrorMessage(message) {
-            let errorMessage = $("#error-message");
-            errorMessage.text(message).show();
-            $("#text").addClass('error');
-            setTimeout(function() {
-                errorMessage.hide();
-                $("#text").removeClass('error');
-            }, 3000);
-        }
 
-        function showSuccessMessage(message) {
-            let successMessage = $("#success-message");
-            successMessage.text(message).show();
-            setTimeout(function() {
-                successMessage.hide();
-            }, 2000);
-        }
-
-        function updateTable(qr_data) {
+        function updateTable(qrData) {
             let tableBody = $("#qr-code-table");
             tableBody.empty();
-            qr_data.forEach((data, index) => {
+            qrData.forEach((data, index) => {
                 let row = `<tr>
                     <td>${index + 1}</td>
                     <td>${data.text}</td>
@@ -163,7 +143,21 @@
         }
 
         function updateCounter(counter) {
-            $("#counter-display").text("目前處理的件數：" + counter);
+            $("#counter-display").text(`目前處理的件數：${counter}`);
+        }
+
+        function showErrorMessage(message) {
+            let errorMessage = $("#error-message");
+            errorMessage.text(message);
+            errorMessage.show();
+            setTimeout(() => errorMessage.hide(), 3000);
+        }
+
+        function showSuccessMessage(message) {
+            let successMessage = $("#success-message");
+            successMessage.text(message);
+            successMessage.show();
+            setTimeout(() => successMessage.hide(), 3000);
         }
     </script>
 </body>
