@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, g, current_app, send_file
+from flask import Flask, request, render_template, jsonify, g, current_app
 import qrcode
 import io
 import base64
@@ -9,7 +9,7 @@ import sqlite3
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-import psutil  # Importing psutil for memory usage logging
+import psutil
 
 class Config:
     DATABASE = os.getenv('DATABASE', 'user_data.db')
@@ -109,19 +109,16 @@ def create_app(config_class=Config):
     
     setup_logging(app)
     
-    # Register teardown context
     @app.teardown_appcontext
     def close_connection(exception):
         db = g.pop('db', None)
         if db is not None:
             db.close()
 
-    # Register template filters
     @app.template_filter('enumerate')
     def enumerate_filter(iterable, start=0):
         return enumerate(iterable, start=start)
     
-    # Initialize database if it doesn't exist
     if not os.path.exists(app.config['DATABASE']):
         with app.app_context():
             init_db(app)
@@ -225,7 +222,6 @@ def create_app(config_class=Config):
                              [username])
             qr_data = [row_to_dict(row) for row in qr_data]
             
-            # Clean up old records
             one_week_ago = datetime.now() - timedelta(days=7)
             db.execute('DELETE FROM user_data WHERE timestamp < ?',
                       [one_week_ago.strftime("%Y-%m-%d %H:%M:%S")])
@@ -250,54 +246,46 @@ def create_app(config_class=Config):
             app.logger.error(f"Error clearing data: {e}")
             return jsonify(status='error', message='Database error'), 500
 
-    @app.route('/scan_records/<username>', methods=['GET'])
-    def scan_records(username):
-        if not validate_username(username):
-            return jsonify(status='error', message='Invalid username')
-            
+    @app.route('/scan_records/', methods=['GET'])
+    def scan_records():
         try:
-            if not query_db('SELECT * FROM users WHERE username = ?', [username], one=True):
-                return jsonify(status='error', message='User not found')
-
             date = request.args.get('date')
             if date:
                 records = query_db(
-                    'SELECT * FROM user_data WHERE username = ? AND DATE(timestamp) = DATE(?)',
-                    [username, date]
+                    'SELECT username, timestamp, qr_data, id FROM user_data WHERE DATE(timestamp) = DATE(?)',
+                    [date]
                 )
             else:
                 records = query_db(
-                    'SELECT * FROM user_data WHERE username = ?',
-                    [username]
+                    'SELECT username, timestamp, qr_data, id FROM user_data'
                 )
             records = [row_to_dict(row) for row in records]
             
-            # Get unique dates
             dates = query_db(
-                'SELECT DISTINCT DATE(timestamp) as date FROM user_data WHERE username = ? ORDER BY date DESC',
-                [username]
+                'SELECT DISTINCT DATE(timestamp) as date FROM user_data ORDER BY date DESC'
             )
             dates = [row['date'] for row in dates]
             
-            return render_template('scan_records.html', records=records, dates=dates, username=username)
+            return render_template('scan_records.html', records=records, dates=dates)
         except Exception as e:
             app.logger.error(f"Error fetching scan records: {e}")
             return jsonify(status='error', message='Internal server error')
 
     @app.route('/delete_record/<username>', methods=['POST'])
     def delete_record(username):
-        if not validate_username(username):
-            return jsonify(status='error', message='Invalid username')
-
         record_id = request.form.get('id')
         if not record_id:
             return jsonify(status='error', message='Record ID not provided')
 
         try:
             db = get_db()
-            db.execute('DELETE FROM user_data WHERE id = ? AND username = ?', [record_id, username])
+            db.execute('DELETE FROM qr_codes WHERE id = ? AND username = ?', [record_id, username])
             db.commit()
-            return jsonify(status='success')
+
+            qr_data = query_db('SELECT id, text, qr_code, timestamp FROM qr_codes WHERE username = ?',
+                             [username])
+            qr_data = [row_to_dict(row) for row in qr_data]
+            return jsonify(status='success', qr_data=qr_data, counter=len(qr_data))
         except Exception as e:
             app.logger.error(f"Error deleting record: {e}")
             return jsonify(status='error', message='Database error')
@@ -320,9 +308,8 @@ def create_app(config_class=Config):
             app.logger.error(f"Error storing scan records: {e}")
             return jsonify(status='error', message=f"Error storing scan records: {e}")
 
-        # Export PDF with pagination
         try:
-            page_size = 50  # Adjust page size as needed
+            page_size = 50
             paginated_data = list(paginate_data(qr_data, page_size))
             pdfs = []
 
@@ -333,7 +320,6 @@ def create_app(config_class=Config):
                 app.logger.info(f"Memory usage after PDF generation (Page {index + 1}): {psutil.virtual_memory().percent}%")
                 pdfs.append(pdf)
 
-            # Combine PDF pages if needed
             combined_pdf = b''.join(pdfs)
             current_date = datetime.now(tz).strftime("%y%m%d")
             total_items = len(qr_data)

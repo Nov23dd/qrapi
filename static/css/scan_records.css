@@ -1,13 +1,35 @@
-/* General styles for the container */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Cormorant+Garamond:wght@400;700&display=swap');
+
+body {
+    font-family: 'Cormorant Garamond', serif;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('https://live.staticflickr.com/4266/35030500056_40bf6ccc65.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
 .container {
     display: flex;
-    min-height: 100vh;
+    width: 80%;
+    max-width: 1200px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: rgba(60, 60, 60, 0.9);
 }
 
 .sidebar {
-    width: 200px;
-    background-color: #f4f4f4;
+    background-color: rgba(80, 80, 80, 0.9);
+    width: 25%;
     padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar ul {
@@ -16,64 +38,81 @@
 }
 
 .sidebar ul li {
-    margin-bottom: 10px;
+    margin: 10px 0;
 }
 
 .sidebar ul li a {
+    color: #ffffff;
     text-decoration: none;
-    color: #333;
-    font-weight: bold;
+    font-weight: 700;
+    display: block;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+
+.sidebar ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .main-content {
-    flex: 1;
-    padding: 20px;
+    width: 75%;
+    padding: 40px;
+    text-align: center;
 }
 
-.main-content h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
+h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    margin-bottom: 15px;
 }
 
 #date-select {
     margin-bottom: 20px;
     padding: 5px;
+    background-color: #2c2c2c;
+    color: #ffffff;
+    border: 1px solid #777;
+    border-radius: 6px;
 }
 
 .table-section {
     margin-top: 20px;
 }
 
-.table-section h2 {
-    margin-bottom: 10px;
-    font-size: 20px;
-}
-
 table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 20px;
+    background: rgba(80, 80, 80, 0.8);
+    color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-table th, table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+table, th, td {
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-table th {
-    background-color: #f2f2f2;
+th, td {
+    padding: 12px;
+    text-align: center;
+    font-size: 16px;
 }
 
-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+th {
+    background: rgba(100, 100, 100, 0.9);
+    font-weight: 700;
 }
 
-table tr:hover {
-    background-color: #f1f1f1;
+tr:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 button {
-    background-color: #d9534f;
+    background-color: #f6706c;
     color: white;
     border: none;
     padding: 5px 10px;
@@ -82,5 +121,5 @@ button {
 }
 
 button:hover {
-    background-color: #c9302c;
+    background-color: #f6706c;
 }

@@ -13,7 +13,7 @@
                 <li><a href="/">主畫面</a></li>
                 <li><a href="#" onclick="navigateToScan()">掃描</a></li>
                 <li><a href="#" onclick="scanComplete()">掃描完成</a></li>
-                <li><a href="/scan_records/{{ username }}">掃描紀錄</a></li>
+                <li><a href="/scan_records">掃描紀錄</a></li>
                 <li><a href="/manage_users">管理使用者</a></li>
             </ul>
         </div>
@@ -75,7 +75,7 @@
                     link.download = response.file_name;
                     link.click();
                     alert('掃描完成，匯出PDF成功');
-                    clearAll();  // 自動清除所有紀錄
+                    clearAll();
                 } else {
                     alert('匯出PDF失敗: ' + response.message);
                 }
@@ -112,23 +112,22 @@
             if (text.length !== 15) {
                 showErrorMessage("寄件編號必須至少15個字符");
                 errorSound.play();
-                $("#text").val('');  // 清空輸入欄
+                $("#text").val('');
                 return;
             }
 
-            // 發送 POST 請求
             $.post(`/generate_qr/${username}`, { text: text }, function(response) {
                 if (response.status === 'success') {
-                    $("#text").val('');  // 清空輸入欄
+                    $("#text").val('');
                     showSuccessMessage("刷取成功");
-                    successSound.pause();  // 停止之前的成功音效
-                    successSound.currentTime = 0;  // 重置音效播放時間
-                    successSound.play();  // 播放成功音效
+                    successSound.pause();
+                    successSound.currentTime = 0;
+                    successSound.play();
 
                     updateTable(response.qr_data);
                     updateCounter(response.counter);
                 } else {
-                    $("#text").val('');  // 清空輸入欄
+                    $("#text").val('');
                     showErrorMessage(response.message);
                     errorSound.play();
                 }
@@ -172,10 +171,13 @@
             const username = "{{ username }}";
             $.post(`/delete_record/${username}`, { id: recordId }, function(response) {
                 if (response.status === 'success') {
-                    fetchRecordsByDate();
+                    updateTable(response.qr_data);
+                    updateCounter(response.counter);
                 } else {
                     alert('刪除紀錄失敗: ' + response.message);
                 }
+            }).fail(function(jqXHR) {
+                alert('刪除紀錄失敗: ' + jqXHR.responseText);
             });
         }
     </script>

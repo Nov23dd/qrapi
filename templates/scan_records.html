@@ -13,12 +13,12 @@
             <ul>
                 <li><a href="/">主畫面</a></li>
                 <li><a href="#" onclick="navigateToScan()">掃描</a></li>
-                <li><a href="/scan_records/{{ username }}">掃描紀錄</a></li>
+                <li><a href="/scan_records">掃描紀錄</a></li>
                 <li><a href="/manage_users">管理使用者</a></li>
             </ul>
         </div>
         <div class="main-content">
-            <h1>{{ username }} 的掃描紀錄</h1>
+            <h1>掃描紀錄</h1>
             <label for="date-select">選擇日期：</label>
             <select id="date-select" onchange="fetchRecordsByDate()">
                 {% for date in dates %}
@@ -31,6 +31,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>使用者</th>
                             <th>掃描時間</th>
                             <th>掃描資料</th>
                             <th>操作</th>
@@ -40,6 +41,7 @@
                         {% for record in records %}
                         <tr>
                             <td>{{ loop.index }}</td>
+                            <td>{{ record.username }}</td>
                             <td>{{ record.timestamp }}</td>
                             <td>{{ record.qr_data }}</td>
                             <td><button onclick="deleteRecord({{ record.id }})">刪除</button></td>
@@ -53,30 +55,31 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         function navigateToScan() {
-            const username = "{{ username }}";
-            window.location.href = `/user/${username}`;
+            window.location.href = `/user/{{ username }}`;
         }
 
         function fetchRecordsByDate() {
-            const username = "{{ username }}";
             const selectedDate = $("#date-select").val();
-            $.get(`/scan_records/${username}?date=${selectedDate}`, function(response) {
+            $.get(`/scan_records/?date=${selectedDate}`, function(response) {
                 if (response.status === 'success') {
                     updateTable(response.records);
                 } else {
                     alert('獲取紀錄失敗: ' + response.message);
                 }
+            }).fail(function(jqXHR) {
+                alert('獲取紀錄失敗: ' + jqXHR.responseText);
             });
         }
 
         function deleteRecord(recordId) {
-            const username = "{{ username }}";
-            $.post(`/delete_record/${username}`, { id: recordId }, function(response) {
+            $.post(`/delete_record/`, { id: recordId }, function(response) {
                 if (response.status === 'success') {
                     fetchRecordsByDate();
                 } else {
                     alert('刪除紀錄失敗: ' + response.message);
                 }
+            }).fail(function(jqXHR) {
+                alert('刪除紀錄失敗: ' + jqXHR.responseText);
             });
         }
 
@@ -86,6 +89,7 @@
             records.forEach((record, index) => {
                 let row = `<tr>
                     <td>${index + 1}</td>
+                    <td>${record.username}</td>
                     <td>${record.timestamp}</td>
                     <td>${record.qr_data}</td>
                     <td><button onclick="deleteRecord(${record.id})">刪除</button></td>

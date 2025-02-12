@@ -21,3 +21,4 @@
 [2025-02-13 03:01:22,094] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
 [2025-02-13 03:17:14,334] INFO in qr_api: Memory usage before PDF generation (Page 1): 82.6%
 [2025-02-13 03:17:14,592] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 05:12:05,585] ERROR in qr_api: Error fetching scan records: expected token ':', got '}'
