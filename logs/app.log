@@ -9,3 +9,13 @@
 [2025-02-13 02:38:15,932] ERROR in qr_app: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
 [2025-02-13 02:41:41,603] INFO in qr_app: Memory usage before PDF generation (Page 1): 79.3%
 [2025-02-13 02:41:41,838] ERROR in qr_app: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 02:50:16,062] INFO in qr_api: Memory usage before PDF generation (Page 1): 80.1%
+[2025-02-13 02:50:16,298] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 02:54:24,350] INFO in qr_api: Memory usage before PDF generation (Page 1): 79.6%
+[2025-02-13 02:54:24,558] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 02:58:11,069] INFO in qr_api: Memory usage before PDF generation (Page 1): 80.4%
+[2025-02-13 02:58:11,209] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 03:00:49,738] INFO in qr_api: Memory usage before PDF generation (Page 1): 79.1%
+[2025-02-13 03:00:49,877] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)
+[2025-02-13 03:01:21,880] INFO in qr_api: Memory usage before PDF generation (Page 1): 79.7%
+[2025-02-13 03:01:22,094] ERROR in qr_api: Error exporting PDF: ("cairo returned CAIRO_STATUS_NO_MEMORY: b'out of memory'", 1)

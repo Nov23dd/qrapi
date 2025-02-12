@@ -64,16 +64,15 @@
 
         function scanComplete() {
             const username = "{{ username }}";
-        $.post(`/scan_complete/${username}`, function(response) {
-            if (response.status === 'success') {
-                alert('掃描完成，匯出PDF成功');
-                clearAll();  // 自動清除所有紀錄
-            } else {
-                alert('匯出PDF失敗: ' + response.message);
-            }
+            $.post(`/scan_complete/${username}`, function(response) {
+                if (response.status === 'success') {
+                    alert('掃描完成，匯出PDF成功');
+                    clearAll();  // 自動清除所有紀錄
+                } else {
+                    alert('匯出PDF失敗: ' + response.message);
+                }
             });
         }
-
 
         function clearAll() {
             const username = "{{ username }}";
