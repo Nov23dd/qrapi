@@ -29,6 +29,7 @@
             </form>
             <audio id="error-sound" src="{{ url_for('static', filename='error-sound.wav') }}"></audio>
             <audio id="success-sound" src="{{ url_for('static', filename='success-sound.mp3') }}"></audio>
+            <audio id="duplicate-sound" src="{{ url_for('static', filename='duplicate-sound.mp3') }}"></audio>
             <div class="table-section">
                 <h2>生成的 QR Code：</h2>
                 <table>
@@ -59,6 +60,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         let successSound = document.getElementById("success-sound");
+        let duplicateSound = document.getElementById("duplicate-sound");
 
         function navigateToScan() {
             const username = "{{ username }}";
@@ -116,18 +118,35 @@
                 return;
             }
 
+            // 檢查是否重複
+            let isDuplicate = false;
+            $("#qr-code-table tr").each(function() {
+                if ($(this).find("td:eq(1)").text() === text) {
+                    isDuplicate = true;
+                    return false; // 退出循環
+                }
+            });
+
+            if (isDuplicate) {
+                showErrorMessage("重複的包裹代碼");
+                errorSound.play();
+                $("#text").val('');
+                return;
+            }
+
+            // 發送 POST 請求
             $.post(`/generate_qr/${username}`, { text: text }, function(response) {
                 if (response.status === 'success') {
-                    $("#text").val('');
+                    $("#text").val('');  // 清空輸入欄
                     showSuccessMessage("刷取成功");
-                    successSound.pause();
-                    successSound.currentTime = 0;
-                    successSound.play();
+                    successSound.pause();  // 停止之前的成功音效
+                    successSound.currentTime = 0;  // 重置音效播放時間
+                    successSound.play();  // 播放成功音效
 
                     updateTable(response.qr_data);
                     updateCounter(response.counter);
                 } else {
-                    $("#text").val('');
+                    $("#text").val('');  // 清空輸入欄
                     showErrorMessage(response.message);
                     errorSound.play();
                 }
@@ -155,9 +174,12 @@
 
         function showErrorMessage(message) {
             let errorMessage = $("#error-message");
-            errorMessage.text(message);
-            errorMessage.show();
-            setTimeout(() => errorMessage.hide(), 3000);
+            errorMessage.text(message).show();
+            $("#text").addClass('error');
+            setTimeout(function() {
+                errorMessage.hide();
+                $("#text").removeClass('error');
+            }, 3000);
         }
 
         function showSuccessMessage(message) {
