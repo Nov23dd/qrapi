@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ED81g_Midnight_Express</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   ★★★ 可自訂區（改這裡就好）★★★
+   - 密碼、紀念日、出發日期都在最底下的 <script> 的 CONFIG 裡
+   ========================================================= */
+
+:root{
+  --rave-blue:#0e63d6;      /* 雷文克勞皇家藍 */
+  --rave-bronze:#cd9b4a;    /* 青銅 */
+  --neon-yellow:#f9e014;    /* ZUTOMAYO 黃 */
+  --neon-pink:#ff2e88;      /* 霓虹粉 */
+  --neon-cyan:#00ffcc;      /* 青色 */
+  --neon-purple:#b624ff;    /* 紫 */
+  --term-green:#00ff66;     /* 終端機綠 */
+  --bg:#070a14;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(circle at 20% 0%, rgba(182,36,255,.18), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(14,99,214,.22), transparent 45%),
+    linear-gradient(180deg,#0a0f22 0%, #0a0a18 45%, #1a0d22 100%);
+  color:#f1f1f5;
+  font-family:'DotGothic16','Courier New',monospace;
+  min-height:100vh;
+  overflow-x:hidden;
+  image-rendering:pixelated;
+}
+
+/* 飄落的星星/雪 */
+.sky{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.star{position:absolute;top:-10px;color:#fff;opacity:.8;animation:fall linear infinite;}
+@keyframes fall{
+  0%{transform:translateY(-10vh) translateX(0) rotate(0);opacity:0;}
+  10%{opacity:.9;}
+  100%{transform:translateY(110vh) translateX(40px) rotate(360deg);opacity:0;}
+}
+/* 飛過的貓頭鷹 */
+.owl{position:fixed;top:14%;left:-60px;font-size:26px;z-index:1;animation:flyacross 18s linear infinite;}
+@keyframes flyacross{
+  0%{left:-60px;transform:translateY(0);}
+  50%{transform:translateY(-30px);}
+  100%{left:110%;transform:translateY(10px);}
+}
+
+.wrap{position:relative;z-index:2;display:flex;justify-content:center;align-items:flex-start;padding:24px 14px 80px;}
+.stage{width:100%;max-width:860px;}
+.pixel-text{font-size:14px;line-height:1.7;}
+
+/* ============ 階段一：夢幻龍族 × 楓之谷登入 ============ */
+#login-stage{min-height:80vh;display:flex;align-items:center;justify-content:center;position:relative;}
+.login-dragons{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.dragon{position:absolute;font-size:40px;opacity:.85;filter:drop-shadow(0 0 10px #b624ff);}
+.dragon.d1{top:8%;animation:dragonFly 15s linear infinite;}
+.dragon.d2{top:68%;font-size:32px;animation:dragonFly2 19s linear infinite;}
+@keyframes dragonFly{0%{left:-60px;transform:translateY(0);}50%{transform:translateY(-28px);}100%{left:112%;transform:translateY(8px);}}
+@keyframes dragonFly2{0%{right:-60px;transform:translateY(0) scaleX(-1);}50%{transform:translateY(26px) scaleX(-1);}100%{right:112%;transform:translateY(-10px) scaleX(-1);}}
+.guardian-dragon{font-size:26px;margin-bottom:2px;filter:drop-shadow(0 0 8px var(--neon-yellow));animation:floaty 3s ease-in-out infinite;}
+@keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+
+/* ============ 雷文克勞登入特效轉場 ============ */
+#rave-transition{
+  display:none;position:fixed;inset:0;z-index:100;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 50%, rgba(14,99,214,.55), rgba(7,10,20,.97) 70%);
+}
+#rave-transition.go::before{content:"";position:absolute;inset:0;background:#dbe9ff;opacity:0;animation:lightning 2.6s steps(1) forwards;pointer-events:none;}
+.rave-ring{position:absolute;width:120px;height:120px;border:3px solid var(--rave-bronze);border-radius:50%;opacity:0;}
+#rave-transition.go .rave-ring{animation:ring 2.6s ease-out forwards;}
+.rave-eagle{font-size:90px;opacity:0;filter:drop-shadow(0 0 26px #6fb0ff);z-index:2;}
+#rave-transition.go .rave-eagle{animation:eagleIn 2.6s cubic-bezier(.2,.8,.2,1) forwards;}
+.rave-house{margin-top:12px;font-size:34px;letter-spacing:8px;color:var(--rave-bronze);text-shadow:0 0 18px var(--rave-blue);opacity:0;font-family:'VT323',monospace;z-index:2;}
+#rave-transition.go .rave-house{animation:houseIn 2.6s ease forwards;}
+.rave-motto{margin-top:8px;color:#6fb0ff;font-size:15px;opacity:0;z-index:2;text-align:center;padding:0 12px;}
+#rave-transition.go .rave-motto{animation:mottoIn 2.6s ease forwards;}
+@keyframes eagleIn{0%{opacity:0;transform:scale(.2) translateY(40px);}28%{opacity:1;}60%{transform:scale(1.12);}80%{transform:scale(1);}100%{opacity:0;transform:scale(1.05) translateY(-20px);}}
+@keyframes houseIn{0%,25%{opacity:0;}48%{opacity:1;}82%{opacity:1;}100%{opacity:0;}}
+@keyframes mottoIn{0%,42%{opacity:0;}62%{opacity:1;}86%{opacity:1;}100%{opacity:0;}}
+@keyframes lightning{0%{opacity:0;}2%{opacity:.85;}5%{opacity:0;}9%{opacity:.55;}11%{opacity:0;}18%{opacity:.4;}20%{opacity:0;}100%{opacity:0;}}
+@keyframes ring{0%{opacity:0;transform:scale(.3);}30%{opacity:.9;}100%{opacity:0;transform:scale(4);}}
+/* 木書外框 */
+.maple-book{
+  position:relative;width:100%;max-width:780px;margin:0 auto;
+  background:#d9c08a;
+  border:16px solid #7a5230;
+  border-radius:12px;
+  box-shadow:0 0 0 5px #b5402e, 0 20px 46px rgba(0,0,0,.65);
+  padding:10px;
+}
+.maple-book::before{ /* 書脊中縫 */
+  content:"";position:absolute;left:50%;top:10px;bottom:10px;width:3px;
+  transform:translateX(-50%);background:rgba(90,60,30,.25);z-index:1;
+}
+.ms-ver{position:absolute;top:16px;right:24px;color:#5a3a1c;font-size:13px;z-index:6;}
+
+/* 森林場景 */
+.maple-scene{
+  position:relative;width:100%;min-height:480px;border-radius:6px;overflow:hidden;
+  display:flex;justify-content:flex-end;align-items:center;padding:20px 0;
+  background:linear-gradient(180deg,#e6f4f9 0%, #d6eef0 15%, #c3e8d2 28%, #92d070 42%, #6cbb42 60%, #57a634 82%, #4c9a2c 100%);
+}
+/* 陽光光束（右上） */
+.ms-rays{position:absolute;top:-12%;right:-6%;width:72%;height:82%;pointer-events:none;z-index:1;
+  background:repeating-linear-gradient(116deg, rgba(255,255,255,0) 0 24px, rgba(255,255,255,.13) 24px 40px);
+  transform:rotate(-2deg);
+  -webkit-mask-image:radial-gradient(circle at 82% 2%, #000 0%, transparent 68%);
+          mask-image:radial-gradient(circle at 82% 2%, #000 0%, transparent 68%);}
+/* 遠景森林 */
+.ms-forest{position:absolute;left:0;top:0;width:60%;height:100%;z-index:1;
+  background:radial-gradient(circle at 28% 32%, #4f9a3c, #2e6c22 72%);filter:blur(3px);opacity:.92;border-radius:0 55% 0 0;}
+/* 樹冠 */
+.ms-canopy{position:absolute;border-radius:50%;filter:blur(1px);z-index:2;}
+.ms-canopy.c1{left:-9%;top:-12%;width:44%;height:46%;background:radial-gradient(circle at 42% 38%, #79c84d, #3a8024);}
+.ms-canopy.c2{left:13%;top:-15%;width:30%;height:36%;background:radial-gradient(circle at 50% 40%, #6cbc41, #327020);}
+/* 樹幹（含樹皮紋理） */
+.ms-trunk{position:absolute;left:1%;top:5%;width:21%;height:95%;z-index:2;
+  background:linear-gradient(90deg,#3d2a18 0%,#6a4a2c 46%,#7e5834 62%,rgba(80,55,30,0) 100%);
+  border-radius:0 34% 0 0;box-shadow:inset -7px 0 12px rgba(0,0,0,.28);}
+.ms-trunk::before{content:"";position:absolute;left:34%;top:10%;width:3px;height:78%;
+  background:rgba(0,0,0,.20);border-radius:3px;
+  box-shadow:13px 26px 0 -1px rgba(0,0,0,.14), 24px -12px 0 -1px rgba(0,0,0,.12), 6px 60px 0 -1px rgba(0,0,0,.1);}
+/* 草叢 + 草地 */
+.ms-bush{position:absolute;bottom:0;border-radius:50% 50% 0 0;background:radial-gradient(circle at 50% 28%,#6fbe45,#3d8826);z-index:2;}
+.ms-bush.b1{left:-2%;width:32%;height:19%;}
+.ms-bush.b2{left:23%;width:22%;height:13%;}
+.ms-ground{position:absolute;bottom:0;left:0;width:100%;height:13%;z-index:2;background:linear-gradient(180deg,#60af38,#3f8a27);}
+.ms-ground::before{content:"";position:absolute;top:-5px;left:0;width:100%;height:7px;
+  background:repeating-linear-gradient(86deg,#62b139 0 9px,#4f9b2d 9px 15px);}
+/* 手繪香菇 */
+.shroom{position:absolute;width:62px;z-index:3;filter:drop-shadow(2px 4px 3px rgba(0,0,0,.28));}
+.shroom.big{transform:scale(1.25);} .shroom.small{transform:scale(.62);}
+.shroom .cap{display:block;width:62px;height:40px;position:relative;z-index:2;
+  border-radius:50% 50% 44% 44%/72% 72% 30% 30%;
+  background:
+    radial-gradient(circle at 32% 46%, #f4e0c2 0 6px, transparent 7px),
+    radial-gradient(circle at 60% 33%, #f4e0c2 0 5px, transparent 6px),
+    radial-gradient(circle at 79% 58%, #f4e0c2 0 4px, transparent 5px),
+    radial-gradient(circle at 50% 128%, #ec6a2e, #cf4519);
+  box-shadow:inset -4px -7px 0 rgba(0,0,0,.12);}
+.shroom .stem{display:block;width:30px;height:30px;margin:-9px auto 0;position:relative;z-index:1;
+  background:linear-gradient(90deg,#f6ead0,#e6d0a4);border-radius:0 0 10px 10px/0 0 16px 16px;
+  box-shadow:inset -4px 0 0 rgba(0,0,0,.06);}
+/* 飄浮小龍 */
+.dragon-deco{position:absolute;left:22%;top:13%;font-size:28px;filter:drop-shadow(0 0 8px #b624ff);animation:floaty 4s ease-in-out infinite;z-index:3;}
+
+/* 右側內容欄（logo＋木牌） */
+.ms-right{position:relative;z-index:5;width:60%;max-width:430px;margin-right:5%;
+  display:flex;flex-direction:column;align-items:center;gap:16px;}
+@media(max-width:560px){.ms-right{width:74%;margin-right:6%;}}
+
+/* MapleStory logo */
+.ms-logo{text-align:center;}
+.ms-leaf{font-size:34px;display:block;margin-bottom:-6px;}
+.ms-title{font-family:'DotGothic16',sans-serif;font-weight:bold;
+  font-size:clamp(26px,6.4vw,50px);color:#fff;
+  text-shadow:0 0 2px #25506f, 2px 2px 0 #25506f, 4px 4px 0 rgba(0,0,0,.25);
+  letter-spacing:1px;}
+.ms-sub{color:#fff;font-size:12px;margin-top:4px;text-shadow:1px 1px 2px #25506f;letter-spacing:2px;}
+
+/* 木製招牌 */
+.wood-sign{
+  position:relative;width:100%;
+  background:repeating-linear-gradient(180deg,#a8743e 0 15px,#9a6836 15px 17px);
+  border:3px solid #5e3a1c;border-radius:7px;
+  box-shadow:0 7px 0 #4a2d15, 0 12px 16px rgba(0,0,0,.45), inset 0 0 12px rgba(0,0,0,.2);
+  padding:14px 16px;
+}
+.sign-main::before,.sign-main::after{content:"";position:absolute;bottom:-40px;width:13px;height:48px;
+  background:linear-gradient(90deg,#4a2d15,#7a4e26);border-radius:0 0 3px 3px;z-index:-1;}
+.sign-main::before{left:22%;}
+.sign-main::after{right:22%;}
+.sign-foot{display:flex;justify-content:space-around;gap:8px;padding:12px;}
+
+.wood-row{display:flex;align-items:center;gap:8px;margin:9px 0;}
+.wlabel{color:#fff4df;font-size:16px;text-shadow:1px 1px 0 #4a2d15;min-width:36px;}
+.wood-input{flex:1;min-width:0;background:#c89a5e;border:2px solid #5e3a1c;border-radius:4px;
+  padding:8px;color:#3a2410;font-family:inherit;font-size:15px;outline:none;}
+.wood-input:read-only{background:#bf9456;color:#4a2d10;cursor:default;}
+.wood-input::placeholder{color:#7a5a32;}
+.wood-input:focus{box-shadow:0 0 6px #f9e014;}
+.wood-btn{background:linear-gradient(180deg,#bc8345,#9a6531);border:2px solid #5e3a1c;
+  color:#fff4df;padding:8px 12px;font-family:inherit;font-weight:bold;cursor:pointer;
+  text-shadow:1px 1px 0 #4a2d15;border-radius:5px;box-shadow:0 3px 0 #5e3a1c;font-size:14px;}
+.wood-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #5e3a1c;}
+.wbig{font-size:19px;padding:14px 18px;}
+.wmini{color:#f9e014;font-size:12px;cursor:pointer;text-shadow:1px 1px 0 #4a2d15;}
+.wood-divider{height:2px;background:rgba(74,45,21,.5);margin:8px 0;}
+.wood-row.small{justify-content:space-between;font-size:12px;color:#fff4df;text-shadow:1px 1px 0 #4a2d15;gap:6px;}
+.wood-row.small span{cursor:pointer;}
+
+/* 角落楓葉 logo */
+.ms-corner{position:absolute;right:5%;bottom:3%;color:#b5402e;font-weight:bold;font-size:18px;z-index:5;text-shadow:1px 1px 0 #fff4df;}
+.ms-corner span{font-size:13px;color:#5a3a1c;}
+
+.motto{position:absolute;left:4%;bottom:14%;max-width:30%;color:#234d1a;font-style:italic;font-size:12px;text-shadow:0 1px 1px rgba(255,255,255,.4);z-index:5;}
+.hint{position:absolute;left:4%;bottom:8%;max-width:30%;color:#3a2a12;font-size:11px;z-index:5;}
+#error-msg{position:absolute;left:5%;bottom:3%;color:#fff;background:#b5402e;padding:4px 10px;border-radius:4px;display:none;font-size:12px;z-index:7;}
+
+/* ============ 階段二：斜角巷開門 ============ */
+.diagon-alley-gate{
+  position:relative;width:100%;height:160px;
+  border:3px solid var(--rave-blue);
+  box-shadow:0 0 18px rgba(249,224,20,.35);
+  overflow:hidden;margin-bottom:26px;background:#1a130d;
+}
+.brick{
+  position:absolute;top:0;height:100%;width:50%;
+  background:
+    repeating-linear-gradient(0deg,#2a1d12 0 14px,#22170d 14px 16px),
+    repeating-linear-gradient(90deg,#2a1d12 0 30px,#1c130a 30px 32px);
+  transition:transform 1.6s cubic-bezier(.7,0,.3,1);z-index:5;
+}
+.brick.left{left:0;border-right:2px solid #000;}
+.brick.right{right:0;border-left:2px solid #000;}
+.gate.open .brick.left{transform:translateX(-101%);}
+.gate.open .brick.right{transform:translateX(101%);}
+.alley-inner{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 50% 120%, rgba(249,224,20,.25), transparent 60%),
+    linear-gradient(180deg,#1a1030,#3a2a10);
+}
+.alley-inner span{
+  color:var(--neon-yellow);font-size:16px;text-shadow:2px 2px #000;
+  animation:blink 1.5s infinite;text-align:center;padding:0 10px;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+/* ============ 標題 ============ */
+.ztm-header{text-align:center;margin-bottom:28px;}
+.glitch{
+  font-size:clamp(22px,5vw,36px);color:var(--neon-yellow);
+  position:relative;display:inline-block;text-shadow:2px 2px var(--neon-pink);
+}
+.glitch::before,.glitch::after{
+  content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden;
+}
+.glitch::before{color:var(--neon-cyan);animation:glitchTop 2.5s infinite linear alternate;clip-path:inset(0 0 55% 0);}
+.glitch::after{color:var(--neon-pink);animation:glitchBot 2s infinite linear alternate;clip-path:inset(55% 0 0 0);}
+@keyframes glitchTop{0%{transform:transl(0)}20%{transform:translateX(-3px)}40%{transform:translateX(2px)}100%{transform:translateX(0)}}
+@keyframes glitchBot{0%{transform:translateX(0)}25%{transform:translateX(3px)}50%{transform:translateX(-2px)}100%{transform:translateX(0)}}
+.subtitle{color:var(--neon-cyan);font-size:14px;margin-top:6px;}
+
+/* ============ 終端機 ============ */
+.terminal-box{
+  background:#000;border-left:4px solid var(--term-green);
+  padding:16px;margin-bottom:30px;min-height:70px;
+  font-family:'VT323','Courier New',monospace;font-size:17px;
+}
+.terminal-box p{margin:5px 0;color:var(--term-green);}
+.cursor{display:inline-block;width:9px;background:var(--term-green);animation:blink 1s steps(1) infinite;}
+
+/* ============ 火車票 ============ */
+.ticket-container{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:36px;}
+@media(max-width:620px){.ticket-container{grid-template-columns:1fr;}}
+.ticket-card{
+  background:#0f1426;border:3px solid var(--neon-cyan);
+  padding:20px;position:relative;
+  box-shadow:inset 0 0 16px rgba(249,224,20,.12),4px 4px 0 #000;
+  transition:transform .15s;
+}
+.ticket-card::after{
+  /* 票根打孔虛線 */
+  content:"";position:absolute;left:0;right:0;bottom:46px;
+  border-top:2px dashed rgba(255,255,255,.18);
+}
+.ticket-card:hover{transform:translateY(-5px);animation:glitchShake .25s steps(2) 2;box-shadow:6px 6px 0 var(--neon-pink);}
+@keyframes glitchShake{0%{transform:translate(-2px,-5px)}50%{transform:translate(2px,-7px)}100%{transform:translate(0,-5px)}}
+.b-blue{border-color:var(--rave-blue);}
+.b-purple{border-color:var(--neon-purple);}
+.b-yellow{border-color:var(--neon-yellow);}
+.ticket-tag{position:absolute;top:0;right:0;background:var(--neon-cyan);color:#000;font-size:11px;padding:3px 9px;letter-spacing:1px;}
+.ticket-title{color:#9a9ab0;font-size:13px;margin-bottom:10px;}
+.route{font-size:19px;color:#fff;font-weight:bold;margin-bottom:14px;line-height:1.3;}
+.ticket-info{display:flex;justify-content:space-between;font-size:12px;align-items:center;}
+.ticket-note{font-size:12px;color:var(--neon-purple);margin-top:12px;padding-top:8px;border-top:1px dashed #333;}
+.status-valid{color:#666;text-decoration:line-through;}
+.status-wait{color:var(--neon-purple);font-weight:bold;}
+.status-confirm{color:var(--neon-yellow);font-weight:bold;}
+.countdown{margin-top:12px;font-family:'VT323',monospace;font-size:16px;color:var(--neon-cyan);letter-spacing:1px;}
+
+/* ============ 告白信 ============ */
+.letter-box{
+  background:#16131f;border:3px solid var(--neon-pink);
+  padding:30px;box-shadow:5px 5px 0 #000;transition:.5s;
+}
+.crown{text-align:center;font-size:32px;cursor:pointer;margin-bottom:14px;filter:drop-shadow(0 0 6px var(--neon-yellow));transition:transform .3s;}
+.crown:hover{transform:scale(1.15) rotate(-4deg);}
+.letter-title{color:var(--neon-pink);margin:0 0 14px;font-size:22px;}
+.letter-content{font-size:15px;line-height:2;color:#e6e6ee;}
+.baseball-egg{text-align:center;margin-top:24px;color:var(--neon-yellow);font-size:13px;border-top:1px dashed var(--neon-pink);padding-top:16px;}
+
+/* ============ 你手繪的 EMU3000 展示位 ============ */
+.emu-section{text-align:center;}
+.emu-label{color:var(--neon-cyan);font-size:14px;margin-bottom:12px;}
+.emu-frame{display:inline-block;border:3px solid var(--rave-bronze);background:#0c1020;padding:8px;box-shadow:4px 4px 0 #000,inset 0 0 16px rgba(205,155,74,.22);max-width:92vw;}
+.emu-frame img{display:block;max-width:440px;width:100%;}
+.emu-ph{display:flex;align-items:center;justify-content:center;width:440px;max-width:84vw;height:200px;color:#7a7a90;font-size:13px;text-align:center;border:2px dashed #3a3a4a;line-height:1.8;}
+
+/* ============ 像素合照 Canvas ============ */
+.photo-section{text-align:center;margin-top:34px;}
+.render-btn{
+  background:var(--neon-cyan);color:#000;border:none;padding:13px 26px;
+  font-family:inherit;font-weight:bold;font-size:15px;cursor:pointer;box-shadow:4px 4px 0 #000;
+}
+.render-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000;}
+#photo-container{display:none;margin-top:22px;}
+#pixelCanvas{
+  width:300px;height:300px;max-width:90vw;
+  border:3px solid var(--neon-pink);background:#000;
+  box-shadow:0 0 18px rgba(255,46,136,.4);image-rendering:pixelated;
+}
+.photo-caption{color:var(--term-green);font-size:13px;margin-top:10px;font-family:'VT323',monospace;}
+
+/* ============ 8年畫筆彩蛋 ============ */
+.drawing-egg{
+  margin-top:32px;text-align:center;border:2px dashed var(--rave-blue);
+  padding:18px;background:#0c1020;
+}
+.drawing-egg p{margin:6px 0;}
+
+/* ============ BGM 開關 ============ */
+.bgm-toggle{
+  position:fixed;right:14px;bottom:14px;z-index:50;
+  background:#000;color:var(--neon-cyan);border:2px solid var(--neon-cyan);
+  padding:8px 12px;font-family:inherit;font-size:13px;cursor:pointer;
+  box-shadow:0 0 10px rgba(0,255,204,.4);
+}
+.fade-in{animation:fadeIn 1.4s both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+.section-gap{margin-top:30px;}
+</style>
+</head>
+<body>
+
+<div class="sky" id="sky"></div>
+<div class="owl">🦉</div>
+
+<div class="wrap">
+<div class="stage">
+
+  <!-- ============ 階段一：登入 ============ -->
+  <div id="login-stage">
+    <div class="maple-book">
+      <div class="ms-ver">Ver. ∞ ‧ 7 Years</div>
+      <div class="maple-scene">
+
+        <!-- 森林背景（多層） -->
+        <div class="ms-rays"></div>
+        <div class="ms-forest"></div>
+        <div class="ms-canopy c1"></div>
+        <div class="ms-canopy c2"></div>
+        <div class="ms-trunk"></div>
+        <div class="ms-bush b1"></div>
+        <div class="ms-bush b2"></div>
+        <div class="ms-ground"></div>
+        <!-- 手繪香菇 -->
+        <div class="shroom big"   style="left:6%;bottom:10%;"><span class="cap"></span><span class="stem"></span></div>
+        <div class="shroom"       style="left:20%;bottom:6%;"><span class="cap"></span><span class="stem"></span></div>
+        <div class="shroom small" style="left:31%;bottom:14%;"><span class="cap"></span><span class="stem"></span></div>
+        <span class="dragon-deco">🐉</span>
+
+        <div class="ms-right">
+        <!-- MapleStory logo -->
+        <div class="ms-logo">
+          <span class="ms-leaf">🍁</span>
+          <span class="ms-title">MapleStory</span>
+          <div class="ms-sub">× 夢幻龍族 × RAVENCLAW</div>
+        </div>
+
+        <!-- 木製登入招牌 -->
+        <div class="wood-sign sign-main">
+          <div class="wood-row">
+            <span class="wlabel">帳號</span>
+            <input id="account" class="wood-input" value="ED81g" readonly>
+            <button class="wood-btn wbig" onclick="checkPasscode()">登入</button>
+          </div>
+          <div class="wood-row">
+            <span class="wlabel">密碼</span>
+            <input id="passcode" class="wood-input" type="password" placeholder="我們的紀念日" maxlength="8" autocomplete="off">
+            <span class="wmini" onclick="checkPasscode()">會員登入</span>
+          </div>
+          <div class="wood-divider"></div>
+          <div class="wood-row small">
+            <span>✔ 記憶帳號</span><span>查詢密碼</span><span>找回密碼</span>
+          </div>
+        </div>
+
+        <!-- 木製功能招牌 -->
+        <div class="wood-sign sign-foot">
+          <span class="wood-btn" onclick="checkPasscode()">加入會員</span>
+          <span class="wood-btn">官方網站</span>
+          <span class="wood-btn">結束</span>
+        </div>
+        </div><!-- /ms-right -->
+
+        <p id="error-msg">[ERROR] 密碼錯誤，睿智的雷文克勞不會記錯回憶。</p>
+        <div class="ms-corner">楓之谷 🍁 <span>MapleStory</span></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 階段二＋三：主畫面 ============ -->
+  <div id="main-stage" style="display:none;">
+
+    <!-- 斜角巷開門 -->
+    <div class="diagon-alley-gate gate" id="gate">
+      <div class="alley-inner"><span>⚡ 歡迎來到 ED81g 的深夜斜角巷 ⚡</span></div>
+      <div class="brick left"></div>
+      <div class="brick right"></div>
+    </div>
+
+    <header class="ztm-header">
+      <h1 class="glitch" data-text="ずっと真夜中でいいのに。">ずっと真夜中でいいのに。</h1>
+      <p class="subtitle">> 🦅 雷文克勞專屬班次 ED81g，已默默守護 <span id="days-together">----</span> 天 🦅</p>
+    </header>
+
+    <div class="terminal-box" id="terminal"></div>
+
+    <!-- 4 張火車票 -->
+    <div class="ticket-container">
+
+      <div class="ticket-card b-blue">
+        <div class="ticket-tag" style="background:var(--rave-blue);color:#fff;">01 / PAST</div>
+        <div class="ticket-title">7 年相伴之約</div>
+        <div class="route">我們 ➔ 未來</div>
+        <div class="ticket-info"><span>PRICE: <span id="days-price">----</span> Days</span><span class="status-valid">VALIDATED</span></div>
+      </div>
+
+      <div class="ticket-card b-purple">
+        <div class="ticket-tag" style="background:var(--neon-purple);">02 / CURRENT</div>
+        <div class="ticket-title">當下的停靠站</div>
+        <div class="route">宜蘭 ➔ 在家等你</div>
+        <div class="ticket-info"><span>STATUS: Awaiting</span><span class="status-wait">⏳ 處理中</span></div>
+        <div class="ticket-note">不管你去釐清什麼，我都在這。這站只是暫停，不是終點。</div>
+      </div>
+
+      <div class="ticket-card b-yellow">
+        <div class="ticket-tag" style="background:var(--neon-yellow);color:#000;">03 / DESTINATION</div>
+        <div class="ticket-title">ED81g 聖地巡禮特快車</div>
+        <div class="route" style="font-size:16px;">台灣 ➔ 大阪 4天3夜</div>
+        <div class="ticket-info"><span>2026.09.25 – 09.28</span><span class="status-confirm">已訂位 🚂</span></div>
+        <div class="countdown" id="countdown">計算發車倒數中…</div>
+        <div class="ticket-note" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">★ 其中一天，去京都鐵道博物館。</div>
+      </div>
+
+      <div class="ticket-card b-blue">
+        <div class="ticket-tag" style="background:var(--rave-blue);color:#fff;">04 / BEYOND</div>
+        <div class="ticket-title">未來的藍圖</div>
+        <div class="route">花東環島 ➔ 歐洲漫步</div>
+        <div class="ticket-info"><span>PRICE: Priceless</span><span class="status-confirm">INFINITE 🌍</span></div>
+      </div>
+
+    </div>
+
+    <!-- 你手繪的 EMU3000 -->
+    <div class="emu-section section-gap">
+      <p class="emu-label">🚆 月台特別展示 ── ED81g 親點：EMU3000</p>
+      <div class="emu-frame">
+        <img id="emu-img" src="emu3000.png" alt="EMU3000"
+             onerror="this.style.display='none';document.getElementById('emu-ph').style.display='flex';">
+        <div id="emu-ph" class="emu-ph" style="display:none;">
+          <span>[ 你親手畫的 EMU3000，即將進站… ]<br><small>把畫好的圖存成 emu3000.png 放在同一個資料夾就會自動顯示</small></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 告白信 -->
+    <div class="letter-box fade-in">
+      <div class="crown" onclick="triggerRavenclaw()" title="點我注入雷文克勞魔法">👑</div>
+      <h2 class="letter-title" id="letter-title">致 ED81g 列車長：</h2>
+      <p class="letter-content">
+        辛苦了。這一年半，是我忘了停下來看看你的疲憊，忘了給你需要的情緒價值，甚至還對你說了那些賭氣的話，對不起。謝謝你即使在最混亂的時候，依然把最核心的安全感和生活留在我們這裡。<br><br>
+        還有……昨天不小心吃了你的雪花牛，真的對不起讓你體驗那麼差，也沒有立即補償你、逗你開心。下禮拜六四點跟著你走，早點用完我們一起去吃加分，你願意給我贖罪的機會嗎？<br><br>
+        今天你從宜蘭回來，不管你釐清的結果如何，我都想讓你看見我的決心。我正在努力修正我的 Bug，學著好好關心你、注意你的情緒與需求。九月的大阪、你最想朝聖的京都鐵道博物館、還有未來的歐洲和花東，車票我都已經在 Code 裡幫你預留好位置了。<br><br>
+        我還想跟你許一個約定：以後每一年的過年，我們都要一起出國過。把每一個重要的日子，都變成我們一起去看世界的理由。<br><br>
+        這一次，換我當你的副駕駛，陪你開往下一段 7 年。不論外面多複雜，只要你回頭，ED81g 的專屬月台一直都在這裡。
+      </p>
+      <div class="baseball-egg">⚾ [ 棒球、電吉他 與雷文克勞的鷹羽已加載，隨時為你應援 ] 🎸</div>
+    </div>
+
+    <!-- 像素合照 -->
+    <div class="photo-section section-gap">
+      <button class="render-btn" onclick="startLoadingPhoto()">⚡ [CLICK] 執行：用程式碼重構我們的合照.exe</button>
+      <div id="photo-container">
+        <canvas id="pixelCanvas" width="300" height="300"></canvas>
+        <p class="photo-caption" id="photo-caption">[System]: 正在重構像素合照…</p>
+      </div>
+    </div>
+
+    <!-- 8 年畫筆彩蛋 -->
+    <div class="drawing-egg section-gap">
+      <p style="color:#6fb0ff;font-size:13px;">[System_Notification] 偵測到一項停滯 2920 天（8 年）的背景程序…</p>
+      <p style="color:#fff;font-size:14px;">⚡ <b>Status: <span style="color:var(--neon-yellow);">Painting_Our_Photo.exe（正在初始化中）</span></b> ⚡</p>
+      <p style="color:#888;font-size:12px;line-height:1.7;">
+        「雖然 8 年沒有拿起畫筆了，但這一次，我已經在排程裡寫好了代碼。<br>
+        下一次進站，會補上一張真正親手畫的、專屬於我們的合照。敬請期待。」
+      </p>
+    </div>
+
+  </div><!-- /main-stage -->
+
+</div></div>
+
+<!-- 雷文克勞登入特效轉場 -->
+<div id="rave-transition">
+  <div class="rave-ring"></div>
+  <div class="rave-eagle">🦅</div>
+  <div class="rave-house">RAVENCLAW</div>
+  <div class="rave-motto">過人的智慧，是人類最大的財富</div>
+</div>
+
+<!-- 隱藏的 YouTube BGM 播放器 -->
+<div id="yt-bgm" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;"></div>
+
+<button class="bgm-toggle" id="bgmBtn" onclick="toggleBgm()" style="display:none;">♪ BGM: ON</button>
+
+<script>
+/* =========================================================
+   ★★★ CONFIG —— 只要改這 4 行就好 ★★★
+   ========================================================= */
+const CONFIG = {
+  PASSCODE:     "20191104",      // ← 我們的紀念日（密碼）
+  PASS_HINT:    "",              // ← 登入頁小提示（已隱藏，留空即可）
+  ANNIVERSARY:  "2019-11-04",    // ← 真正在一起的日期（用來算共同天數）
+  OSAKA_DATE:   "2026-09-25T00:00:00", // ← 大阪出發日，用來倒數
+  LOGIN_YT_ID:  "ISNyeegVlaw",   // ← 登入畫面循環播放的歌（直到登入成功）
+  INTRO_YT_ID:  "L8ySlcz_Ui0",  // ← 進主頁後先「完整播完」的短片，播完才淡入主 BGM
+  BGM_YT_ID:    "Xxpit77p8wo",   // ← 主 BGM（短片播完後漸進淡入），空字串 "" 則改用內建合成音樂
+  STATION_SFX:  "",              // ← 想用「真的」日本車站配音檔，把檔名填這（例如 "station.mp3" 放同資料夾）；留空則用內建合成音
+};
+
+/* ---------- 飄落星星 ---------- */
+(function(){
+  const sky=document.getElementById('sky'); const glyphs=['✦','✧','·','❄','＊'];
+  for(let i=0;i<46;i++){
+    const s=document.createElement('div'); s.className='star';
+    s.textContent=glyphs[i%glyphs.length];
+    s.style.left=Math.random()*100+'%';
+    s.style.fontSize=(8+Math.random()*12)+'px';
+    s.style.animationDuration=(6+Math.random()*10)+'s';
+    s.style.animationDelay=(-Math.random()*12)+'s';
+    s.style.color=['#fff','#6fb0ff','#f9e014','#ff2e88'][i%4];
+    sky.appendChild(s);
+  }
+})();
+
+/* 顯示提示（已移除提示元素，保留防呆） */
+(function(){const h=document.getElementById('hint'); if(h&&CONFIG.PASS_HINT)h.textContent=CONFIG.PASS_HINT;})();
+
+/* 第一次互動（點畫面 / 開始打密碼）就播放登入畫面音樂；瀏覽器規定要有手勢才能出聲 */
+let loginMusicStarted=false;
+function firstGesture(){
+  if(loginMusicStarted)return; loginMusicStarted=true;
+  if(document.getElementById('login-stage').style.display!=='none') startLoginMusic();
+}
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,firstGesture,{once:false}));
+
+/* ---------- 密碼解鎖 ---------- */
+function checkPasscode(){
+  const code=document.getElementById('passcode').value.trim();
+  const err=document.getElementById('error-msg');
+  if(code===CONFIG.PASSCODE){
+    ensureAudio();
+    arrivalChime();            // 🚉 到站廣播：叮咚
+    approachRumble();          // 🚆 列車進站轟隆聲
+    document.getElementById('login-stage').style.display='none';
+    playRavenTransition();     // 🦅 雷文克勞特效轉場
+    setTimeout(()=>{
+      document.getElementById('rave-transition').style.display='none';
+      document.getElementById('main-stage').style.display='block';
+      document.getElementById('bgmBtn').style.display='block';
+      window.scrollTo(0,0);
+      startIntroThenBgm();     // 🎵 進主頁：先完整播短片，播完淡入 City Pop 主BGM
+      setTimeout(()=>{document.getElementById('gate').classList.add('open');trainHorn();},350); // 開門+汽笛
+      setTimeout(typeTerminal,1600);
+      startCounters();
+    },2600);
+  }else{
+    err.style.display='block';
+    err.classList.remove('fade-in'); void err.offsetWidth; err.classList.add('fade-in');
+  }
+}
+
+/* 雷文克勞特效轉場：藍光、巨鷹、鷹羽、閃電 */
+function playRavenTransition(){
+  const ov=document.getElementById('rave-transition');
+  ov.style.display='flex';
+  ov.classList.remove('go'); void ov.offsetWidth; ov.classList.add('go');
+  for(let i=0;i<26;i++){
+    const f=document.createElement('div');
+    f.textContent=['🪶','✦','⚡'][i%3];
+    f.style.cssText=`position:fixed;top:-30px;left:${Math.random()*100}%;font-size:${14+Math.random()*18}px;z-index:120;pointer-events:none;animation:fall ${2.2+Math.random()*1.8}s linear forwards;`;
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),4200);
+  }
+}
+document.getElementById('passcode').addEventListener('keydown',e=>{if(e.key==='Enter')checkPasscode();});
+
+/* ---------- 終端機打字機 ---------- */
+function typeTerminal(){
+  const lines=[
+    '> system.load("past_and_future_log");',
+    '> 偵測到過去一年半的日常 Bug：忘了出去玩、忘了情緒價值。',
+    '> 正在啟動補償與重開機機制… 載入專屬車票。',
+    '> [OK] welcome back, ED81g.'
+  ];
+  const box=document.getElementById('terminal'); box.innerHTML='';
+  let li=0;
+  function nextLine(){
+    if(li>=lines.length)return;
+    const p=document.createElement('p'); box.appendChild(p);
+    const text=lines[li]; let ci=0;
+    const cur=document.createElement('span'); cur.className='cursor'; cur.innerHTML='&nbsp;'; p.appendChild(cur);
+    const t=setInterval(()=>{
+      cur.insertAdjacentText('beforebegin',text[ci]); ci++;
+      if(ci>=text.length){clearInterval(t);cur.remove();li++;setTimeout(nextLine,350);}
+    },32);
+  }
+  nextLine();
+}
+
+/* ---------- 計數器：共同天數 + 大阪倒數 ---------- */
+function startCounters(){
+  const anni=new Date(CONFIG.ANNIVERSARY);
+  const osaka=new Date(CONFIG.OSAKA_DATE);
+  function tick(){
+    const now=new Date();
+    const days=Math.floor((now-anni)/86400000);
+    document.getElementById('days-together').textContent=days.toLocaleString();
+    document.getElementById('days-price').textContent=days.toLocaleString();
+    let diff=osaka-now;
+    const cd=document.getElementById('countdown');
+    if(diff<=0){cd.textContent='🎉 大阪，我們出發！';}
+    else{
+      const d=Math.floor(diff/86400000); diff%=86400000;
+      const h=Math.floor(diff/3600000); diff%=3600000;
+      const m=Math.floor(diff/60000); diff%=60000;
+      const s=Math.floor(diff/1000);
+      cd.textContent=`距離大阪發車：${d}天 ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+  }
+  tick(); setInterval(tick,1000);
+}
+
+/* ---------- 雷文克勞王冠彩蛋 ---------- */
+function triggerRavenclaw(){
+  const box=document.querySelector('.letter-box');
+  box.style.borderColor='#0e63d6';
+  box.style.boxShadow='0 0 26px #0e63d6';
+  box.style.background='linear-gradient(180deg,#0d1530,#16131f)';
+  const t=document.getElementById('letter-title');
+  t.innerText='致 睿智的雷文克勞 電吉他手 ED81g：';
+  t.style.color='#6fb0ff';
+  // 灑下鷹羽
+  for(let i=0;i<18;i++){
+    const f=document.createElement('div');
+    f.textContent=['🪶','🦅','✦'][i%3];
+    f.style.cssText=`position:fixed;top:-30px;left:${Math.random()*100}%;font-size:${14+Math.random()*16}px;z-index:60;pointer-events:none;animation:fall ${4+Math.random()*4}s linear forwards;`;
+    document.body.appendChild(f);
+    setTimeout(()=>f.remove(),8000);
+  }
+}
+
+/* ---------- 像素合照：用 Canvas 一格一格組裝 ---------- */
+function startLoadingPhoto(){
+  departureMelody();   // 🚆 離站發車：開往我們的未來
+  document.getElementById('photo-container').style.display='block';
+  const canvas=document.getElementById('pixelCanvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const GRID=64, SCALE=canvas.width/GRID;
+
+  // 先把整張場景畫到離屏 canvas，再像粒子一樣慢慢「組裝」出來
+  const off=document.createElement('canvas'); off.width=GRID; off.height=GRID;
+  drawScene(off.getContext('2d'),GRID);
+  const data=off.getContext('2d').getImageData(0,0,GRID,GRID).data;
+
+  const order=[];
+  for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++)order.push([x,y]);
+  for(let i=order.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[order[i],order[j]]=[order[j],order[i]];}
+
+  let i=0; const batch=22;
+  const timer=setInterval(()=>{
+    for(let n=0;n<batch&&i<order.length;n++,i++){
+      const [x,y]=order[i]; const idx=(y*GRID+x)*4;
+      const a=data[idx+3]/255;
+      ctx.fillStyle=`rgba(${data[idx]},${data[idx+1]},${data[idx+2]},${a})`;
+      ctx.fillRect(x*SCALE,y*SCALE,SCALE+0.5,SCALE+0.5);
+    }
+    if(i>=order.length){
+      clearInterval(timer);
+      document.getElementById('photo-caption').textContent='[System]: 7 年合照像素重構成功。歡迎回家，ED81g。';
+    }
+  },28);
+}
+
+/* 畫一張 City Pop 深夜、兩個人並肩（一個彈電吉他）的像素場景 */
+function drawScene(c,N){
+  const P=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h);};
+  // 夜空漸層
+  for(let y=0;y<N;y++){
+    const t=y/N;
+    const r=Math.round(20+t*40), g=Math.round(10+t*16), b=Math.round(40+t*30);
+    P(0,y,N,1,`rgb(${r},${g},${b})`);
+  }
+  // 月亮
+  c.fillStyle='#f9e014';c.beginPath();c.arc(50,12,6,0,7);c.fill();
+  c.fillStyle='rgba(249,224,20,.25)';c.beginPath();c.arc(50,12,9,0,7);c.fill();
+  // 星星
+  const stars=[[8,6],[15,10],[22,5],[33,8],[40,4],[58,20],[6,18],[27,14],[45,16]];
+  c.fillStyle='#fff'; stars.forEach(s=>P(s[0],s[1],1,1,'#fff'));
+  // 城市剪影
+  const sky='#1a1230';
+  for(let x=0;x<N;x+=6){const h=8+((x*7)%10);P(x,40-h,5,h,'#241a3a');}
+  // 霓虹窗
+  c.fillStyle='#ff2e88';for(let x=2;x<N;x+=6){P(x,36,1,1,'#ff2e88');P(x+2,33,1,1,'#00ffcc');}
+  // 地面/月台
+  P(0,46,N,N-46,'#0c1020');
+  P(0,46,N,2,'#0e63d6'); // 月台藍邊
+  // 路燈
+  P(6,30,1,16,'#444');P(4,29,5,2,'#cd9b4a');P(5,30,3,2,'#f9e014');
+
+  // ---- 角色 B（你，左）----
+  const bx=22,by=30;
+  P(bx,by,6,6,'#f2c9a0');        // 頭
+  P(bx-1,by-2,8,3,'#5a3b2a');    // 頭髮
+  P(bx-1,by+1,2,3,'#5a3b2a');P(bx+5,by+1,2,3,'#5a3b2a');
+  P(bx+1,by+2,1,1,'#000');P(bx+4,by+2,1,1,'#000'); // 眼
+  P(bx,by+7,6,9,'#ff2e88');      // 身體(粉)
+  P(bx-1,by+8,2,6,'#f2c9a0');P(bx+6,by+8,2,6,'#f2c9a0'); // 手
+  P(bx+1,by+16,2,4,'#2a2a3a');P(bx+3,by+16,2,4,'#2a2a3a'); // 腿
+
+  // ---- 角色 A（ED81g，右，彈電吉他 + 雷文克勞圍巾）----
+  const ax=34,ay=29;
+  P(ax,ay,6,6,'#eebf96');        // 頭
+  P(ax-1,ay-2,8,3,'#23222e');    // 頭髮(深)
+  P(ax-1,ay,8,2,'#23222e');
+  P(ax+1,ay+2,1,1,'#000');P(ax+4,ay+2,1,1,'#000'); // 眼
+  P(ax,ay+6,6,2,'#0e63d6');      // 雷文克勞圍巾(藍)
+  P(ax,ay+7,6,1,'#cd9b4a');      // 青銅條紋
+  P(ax,ay+8,6,8,'#1d2740');      // 身體(深藍襯衫)
+  P(ax-1,ay+9,2,6,'#eebf96');P(ax+6,ay+9,2,5,'#eebf96'); // 手
+  P(ax+1,ay+16,2,4,'#2a2a3a');P(ax+3,ay+16,2,4,'#2a2a3a'); // 腿
+  // 電吉他（斜放）
+  c.save();c.translate(ax+9,ay+12);c.rotate(-0.5);
+  c.fillStyle='#f9e014';c.fillRect(0,0,3,5);     // 琴身
+  c.fillStyle='#cd9b4a';c.fillRect(1,-9,1,9);    // 琴頸
+  c.fillStyle='#fff';c.fillRect(1,-10,2,1);      // 琴頭
+  c.restore();
+
+  // 兩人之間的小愛心
+  P(30,26,1,1,'#ff2e88');P(32,26,1,1,'#ff2e88');P(29,27,4,1,'#ff2e88');P(30,28,2,1,'#ff2e88');P(31,29,1,1,'#ff2e88');
+}
+
+/* ---------- BGM：用 Web Audio 即時生成一段 City Pop 低音 loop ----------
+   不需要任何音檔。想換成真的歌，把這段換成 <audio> 即可（見檔案最底下說明）。 */
+let audioCtx=null, bgmOn=false, bgmTimer=null, masterGain=null, sfxGain=null;
+function ensureAudio(){
+  if(audioCtx)return;
+  try{
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    sfxGain=audioCtx.createGain(); sfxGain.gain.value=0.9; sfxGain.connect(audioCtx.destination);
+  }catch(e){console.log('audio not available',e);}
+}
+
+/* ---------- 🚉 火車音效（Web Audio 即時生成，不需音檔）---------- */
+function sfxTone(freq,start,dur,type,gain){
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,start);
+  g.gain.linearRampToValueAtTime(gain,start+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0008,start+dur);
+  o.connect(g); g.connect(sfxGain); o.start(start); o.stop(start+dur+0.05);
+}
+// 鐘琴音色（多泛音 + 長衰減，像車站接近メロディ的音色）
+function bell(freq,start,dur,gain){
+  [1,2,3].forEach((h,i)=>{
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type='sine'; o.frequency.value=freq*h;
+    const gg=gain*(i===0?1:i===1?0.3:0.12);
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.linearRampToValueAtTime(gg,start+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0006,start+dur);
+    o.connect(g); g.connect(sfxGain); o.start(start); o.stop(start+dur+0.05);
+  });
+}
+// 到站：日本車站「ピンポーン」+ 接近メロディ（也可在 CONFIG 換成真的配音檔）
+function arrivalChime(){
+  if(CONFIG.STATION_SFX){ try{const a=new Audio(CONFIG.STATION_SFX);a.volume=0.85;a.play();}catch(e){} return; }
+  ensureAudio(); if(!audioCtx)return;
+  const t=audioCtx.currentTime+0.05;
+  bell(880.00,t,0.55,0.30);        // ピン (A5)
+  bell(587.33,t+0.34,0.85,0.30);   // ポーン (D5)
+  // 接近メロディ：五聲音階小旋律
+  const mel=[659.25,783.99,880.00,1046.50,880.00,783.99,659.25,587.33];
+  const b=0.21;
+  mel.forEach((f,i)=>bell(f,t+1.25+i*b,b*1.7,0.22));
+}
+// 汽笛：嗚——
+function trainHorn(){
+  ensureAudio(); if(!audioCtx)return;
+  const t=audioCtx.currentTime+0.05;
+  [146.83,196.00].forEach(f=>{
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain(), lp=audioCtx.createBiquadFilter();
+    o.type='sawtooth'; o.frequency.value=f; lp.type='lowpass'; lp.frequency.value=780;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(0.16,t+0.18);
+    g.gain.setValueAtTime(0.16,t+0.9);
+    g.gain.exponentialRampToValueAtTime(0.001,t+1.5);
+    o.connect(lp); lp.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+1.6);
+  });
+}
+// 列車進站轟隆聲（低頻白噪音掃過）
+function approachRumble(){
+  ensureAudio(); if(!audioCtx)return;
+  const t=audioCtx.currentTime, dur=2.6;
+  const buf=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*dur),audioCtx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.5;
+  const src=audioCtx.createBufferSource(); src.buffer=buf;
+  const lp=audioCtx.createBiquadFilter(); lp.type='lowpass';
+  lp.frequency.setValueAtTime(110,t);
+  lp.frequency.linearRampToValueAtTime(620,t+1.2);
+  lp.frequency.linearRampToValueAtTime(140,t+dur);
+  const g=audioCtx.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(0.22,t+1.0);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  src.connect(lp); lp.connect(g); g.connect(sfxGain); src.start(t); src.stop(t+dur);
+}
+// 離站：發車旋律 + 汽笛
+function departureMelody(){
+  ensureAudio(); if(!audioCtx)return;
+  const t0=audioCtx.currentTime+0.1;
+  const mel=[523.25,659.25,783.99,1046.50,783.99,880.00,659.25,523.25];
+  const beat=0.18;
+  mel.forEach((f,i)=>sfxTone(f,t0+i*beat,beat*1.5,'triangle',0.26));
+  setTimeout(trainHorn,mel.length*beat*1000); // 結尾汽笛，列車駛離
+}
+
+/* ---------- BGM（YouTube：登入曲 → 短片 → 主BGM 淡入）---------- */
+let ytPlayer=null, ytPhase=null, ytFadeTimer=null, ytCreating=false, ytReadyCbs=[];
+(function loadYT(){
+  if(!CONFIG.LOGIN_YT_ID && !CONFIG.INTRO_YT_ID && !CONFIG.BGM_YT_ID) return;
+  const tag=document.createElement('script'); tag.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+// 確保播放器就緒後執行 cb（只建立一個播放器，避免聲音重疊）
+function ytEnsure(cb){
+  if(ytPlayer && ytPlayer.loadVideoById){ cb(); return; }
+  ytReadyCbs.push(cb);
+  if(ytCreating) return;
+  ytCreating=true;
+  (function make(){
+    if(!window.YT||!YT.Player){ return setTimeout(make,250); }
+    ytPlayer=new YT.Player('yt-bgm',{
+      playerVars:{autoplay:1,controls:0,playsinline:1},
+      events:{
+        onReady:()=>{ ytCreating=false; const cbs=ytReadyCbs.slice(); ytReadyCbs=[]; cbs.forEach(f=>{try{f();}catch(_){}}); },
+        onStateChange:onYtState
+      }
+    });
+  })();
+}
+function onYtState(e){
+  if(e.data!==YT.PlayerState.ENDED) return;
+  if(ytPhase==='login'){ try{ytPlayer.seekTo(0);ytPlayer.playVideo();}catch(_){} }       // 登入曲循環
+  else if(ytPhase==='intro'){ playMainBgm(); }                                            // 短片播完 → 主BGM
+  else if(ytPhase==='main'){ try{ytPlayer.seekTo(0);ytPlayer.playVideo();}catch(_){} }    // 主BGM循環
+}
+// 登入畫面音樂（第一次互動後才能出聲）
+function startLoginMusic(){
+  if(!CONFIG.LOGIN_YT_ID) return;
+  ytEnsure(()=>{ ytPhase='login';
+    try{ ytPlayer.setVolume(55); ytPlayer.loadVideoById(CONFIG.LOGIN_YT_ID); }catch(e){} });
+}
+// 登入成功：先完整播短片，播完淡入主BGM
+function startIntroThenBgm(){
+  if(CONFIG.INTRO_YT_ID){
+    ytEnsure(()=>{ ytPhase='intro';
+      try{ ytPlayer.setVolume(70); ytPlayer.loadVideoById(CONFIG.INTRO_YT_ID); }catch(e){} });
+  } else { playMainBgm(); }
+}
+// 漸進淡入主BGM
+function playMainBgm(){
+  if(!CONFIG.BGM_YT_ID){ startSynthBgm(); return; }
+  ytEnsure(()=>{ ytPhase='main';
+    try{
+      ytPlayer.setVolume(0); ytPlayer.loadVideoById(CONFIG.BGM_YT_ID); bgmOn=true;
+      clearInterval(ytFadeTimer); let v=0;
+      ytFadeTimer=setInterval(()=>{ v+=3; if(v>=48){v=48;clearInterval(ytFadeTimer);} try{ytPlayer.setVolume(v);}catch(_){} },180);
+    }catch(e){}
+  });
+}
+// 內建合成音樂（沒有設定任何 YouTube 歌時的後備）
+function startSynthBgm(){
+  ensureAudio(); if(!audioCtx||masterGain)return;
+  masterGain=audioCtx.createGain(); masterGain.gain.value=0.0; masterGain.connect(audioCtx.destination);
+  masterGain.gain.linearRampToValueAtTime(0.18,audioCtx.currentTime+2);
+  bgmOn=true; scheduleLoop();
+}
+function note(freq,start,dur,type,gain){
+  const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0,start);
+  g.gain.linearRampToValueAtTime(gain,start+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001,start+dur);
+  o.connect(g); g.connect(masterGain); o.start(start); o.stop(start+dur+0.05);
+}
+function scheduleLoop(){
+  // 一段帶 funk 感的 Bass line（Dm7 - G7 - CMaj7 - Am7 概念）
+  const bass=[73.42,73.42,98.00,98.00,65.41,65.41,55.00,82.41]; // D G C A 走向
+  const lead=[293.66,329.63,349.23,440.00,392.00,349.23,329.63,293.66];
+  const beat=0.34;
+  function play(){
+    if(!bgmOn)return;
+    const t0=audioCtx.currentTime+0.05;
+    for(let i=0;i<8;i++){
+      note(bass[i],t0+i*beat,beat*0.9,'triangle',0.5);          // Bass
+      if(i%2===0)note(bass[i]/2,t0+i*beat,beat*0.6,'square',0.12); // 低八度點綴
+      note(lead[i],t0+i*beat+beat*0.5,beat*0.4,'sine',0.10);    // City Pop 高音
+    }
+    bgmTimer=setTimeout(play,beat*8*1000);
+  }
+  play();
+}
+function toggleBgm(){
+  const btn=document.getElementById('bgmBtn');
+  if(CONFIG.LOGIN_YT_ID||CONFIG.INTRO_YT_ID||CONFIG.BGM_YT_ID){   // YouTube BGM
+    if(!ytPlayer){ return; }
+    bgmOn=!bgmOn;
+    try{ bgmOn?ytPlayer.playVideo():ytPlayer.pauseVideo(); }catch(e){}
+    btn.textContent=bgmOn?'♪ BGM: ON':'♪ BGM: OFF'; return;
+  }
+  if(!masterGain){startSynthBgm();btn.textContent='♪ BGM: ON';return;}
+  bgmOn=!bgmOn;
+  if(bgmOn){masterGain.gain.linearRampToValueAtTime(0.18,audioCtx.currentTime+0.5);scheduleLoop();btn.textContent='♪ BGM: ON';}
+  else{masterGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.4);clearTimeout(bgmTimer);btn.textContent='♪ BGM: OFF';}
+}
+</script>
+
+<!--
+====================================================================
+ 給你的使用說明（看完就刪掉也行）
+====================================================================
+1. 直接「雙擊」這個 card.html 檔案就會用瀏覽器打開，可以馬上測試。
+
+2. 一定要改的 4 個地方（在上面 <script> 的 CONFIG 區）：
+   - PASSCODE   : 你們的專屬密碼（預設 0000）
+   - PASS_HINT  : 登入頁顯示的提示，不想要就改成 ""
+   - ANNIVERSARY: 你們真正在一起的日期，用來算「共同守護了幾天」
+   - OSAKA_DATE : 大阪出發日，用來做倒數計時
+
+3. 想換成「真的 ZUTOMAYO 歌」當 BGM（取代內建的合成音樂）：
+   - 把歌的 mp3 放到跟這個檔案同一個資料夾，例如 song.mp3
+   - 在 <body> 裡任意處加：<audio id="song" src="song.mp3" loop></audio>
+   - 把 startBgm() 裡的內容改成：document.getElementById('song').play();
+   （內建的合成低音是為了「不放音檔也有聲音」，你想保留也可以。）
+
+4. 放你手繪的 EMU3000：把畫好的圖存成 emu3000.png，放在跟這個檔案同一個
+   資料夾，重新整理網頁就會自動出現在「月台特別展示」那一格。
+
+5. 想換成「真實合照」而不是程式畫的像素人：
+   - 把照片存成 photo.jpg 放同資料夾
+   - 在 startLoadingPhoto() 裡，把 drawScene(...) 那段換成把圖片畫進離屏 canvas：
+     const img=new Image(); img.src='photo.jpg';
+     img.onload=()=>{ off.getContext('2d').drawImage(img,0,0,GRID,GRID); ...剩下的組裝邏輯不變 };
+   - 這樣就會「用程式碼一格一格組裝出你們的真實合照」。
+
+5. 想要有專屬網址傳給他：把這個檔案上傳到 GitHub Pages / Vercel / Netlify 即可。
+====================================================================
+-->
+</body>
+</html>
