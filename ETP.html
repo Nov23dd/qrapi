@@ -1,0 +1,27 @@
+import React, { useState } from 'react';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+
+function BarcodeApp() {
+  const [scannedItems, setScannedItems] = useState([]);
+
+  // --- 剛剛那段程式碼放在這裡作為一個內部函數 ---
+  const handleExportPDF = async () => {
+    // ... 貼上剛剛那段 exportToPDF 的程式碼 ...
+    // 注意：確保你的 HTML 表格有一個 id="barcode-table"
+  };
+
+  return (
+    <div>
+      {/* 你的資料表格 */}
+      <table id="barcode-table">
+        {/* ... 表格內容 ... */}
+      </table>
+
+      {/* 觸發按鈕 */}
+      <button onClick={handleExportPDF} className="metallic-btn">
+        📄 匯出 PDF
+      </button>
+    </div>
+  );
+}
