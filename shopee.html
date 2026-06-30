@@ -6,6 +6,7 @@
     <title>合勝大佃 - 蝦皮環保包裹系統</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,9 +25,18 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         #reader { width: 100%; max-width: 360px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
         #reader-wrap { display: none; }
+        .qr-canvas { cursor: zoom-in; width: 96px; height: 96px; }
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
+        #qr-modal canvas { background: white; padding: 20px; border-radius: 12px; }
     </style>
 </head>
 <body>
+
+    <div id="qr-modal" onclick="this.style.display='none'">
+        <p class="text-white mb-4 font-bold tracking-widest uppercase">Tap to close</p>
+        <canvas id="modal-qr"></canvas>
+        <p id="modal-qr-text" class="text-white mt-4 font-mono text-sm break-all max-w-[90%] text-center"></p>
+    </div>
 
     <header class="sticky-header">
         <nav class="nav-onyx text-white">
@@ -85,7 +95,7 @@
                         <th class="py-4 px-4 font-bold w-20 text-center border-r">No.</th>
                         <th class="py-4 px-4 font-bold text-left">訂單號</th>
                         <th class="py-4 px-4 font-bold text-left">SPTO 單號</th>
-                        <th class="py-4 px-4 font-bold text-left">QR 內容</th>
+                        <th class="py-4 px-4 font-bold text-center w-32">掃描 QR（點可放大）</th>
                         <th class="py-4 px-4 font-bold text-right">Time Log</th>
                         <th class="py-4 px-4 font-bold text-center w-16 no-print"></th>
                     </tr>
@@ -138,7 +148,7 @@
         }
 
         // 點畫面時聚焦輸入框（相機開啟時不搶焦點，避免干擾）
-        document.addEventListener('click', (e) => { if (!camOn && e.target.tagName !== 'BUTTON') inputEl.focus(); });
+        document.addEventListener('click', (e) => { if (!camOn && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'CANVAS') inputEl.focus(); });
 
         inputEl.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
@@ -203,6 +213,14 @@
             }
         }
 
+        // ---------- 放大 QR ----------
+        function zoomQR(text) {
+            const modal = document.getElementById('qr-modal');
+            modal.style.display = 'flex';
+            document.getElementById('modal-qr-text').innerText = text;
+            QRCode.toCanvas(document.getElementById('modal-qr'), text, { width: 300, margin: 2 });
+        }
+
         // ---------- 表格 ----------
         function renderTable() {
             tableBody.innerHTML = '';
@@ -213,7 +231,7 @@
                         <td class="p-5 text-center font-bold text-zinc-200 text-3xl border-r">${num}</td>
                         <td class="p-5 font-mono font-bold text-lg text-orange-600">${item.order_no || '-'}</td>
                         <td class="p-5 font-mono text-sm text-zinc-700">${item.spto || '-'}</td>
-                        <td class="p-5 font-mono text-[11px] text-zinc-400 break-all">${item.qr}</td>
+                        <td class="p-2 text-center"><canvas id="qr-${item.id}" class="qr-canvas inline-block"></canvas></td>
                         <td class="p-5 text-right font-mono text-[9px] text-zinc-400">${item.time}</td>
                         <td class="p-5 text-center no-print">
                             <button onclick="deleteItem(${item.id})" class="text-zinc-200 hover:text-red-500 transition-all transform hover:scale-110">
@@ -222,6 +240,9 @@
                         </td>
                     </tr>`;
                 tableBody.insertAdjacentHTML('beforeend', row);
+                const cv = document.getElementById(`qr-${item.id}`);
+                QRCode.toCanvas(cv, item.qr, { width: 96, margin: 1 });
+                cv.onclick = () => zoomQR(item.qr);
             });
             countValue.innerText = scannedItems.length;
         }
@@ -229,10 +250,48 @@
         async function deleteItem(id) { if(confirm('刪除這筆紀錄？')) await _supabase.from('shopee_scans').delete().eq('id', id); }
         async function clearAll() { if(confirm('清空全部紀錄？')) await _supabase.from('shopee_scans').delete().neq('id', 0); }
 
+        // ---------- 匯出 PDF（重新排版成乾淨列印格式，含掃描用 QR）----------
         async function exportToPDF() {
             if (scannedItems.length === 0) return;
-            const table = document.getElementById('scan-table');
-            const canvas = await html2canvas(table, { scale: 2, useCORS: true });
+            const now = new Date();
+            const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+            // 建立離屏列印容器
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:800px;background:#fff;padding:24px;font-family:Inter,sans-serif;';
+            let rows = '';
+            scannedItems.forEach((item, i) => {
+                rows += `
+                    <tr>
+                        <td style="border:1px solid #eee;padding:14px;text-align:center;font-size:24px;color:#ccc;">${i+1}</td>
+                        <td style="border:1px solid #eee;padding:14px;font-weight:bold;font-size:18px;color:#EE4D2D;">${item.order_no || '-'}</td>
+                        <td style="border:1px solid #eee;padding:14px;font-size:12px;color:#555;">${item.spto || '-'}</td>
+                        <td style="border:1px solid #eee;padding:8px;text-align:center;"><canvas id="pdfqr-${i}"></canvas></td>
+                        <td style="border:1px solid #eee;padding:14px;text-align:right;font-size:10px;color:#999;">${item.time}</td>
+                    </tr>`;
+            });
+            wrap.innerHTML = `
+                <h2 style="font-size:20px;font-weight:700;margin:0 0 16px;">合勝大佃｜蝦皮環保包裹　${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}　共 ${scannedItems.length} 筆</h2>
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead><tr style="background:#FAFAFA;color:#888;font-size:11px;">
+                        <th style="border:1px solid #eee;padding:10px;">No.</th>
+                        <th style="border:1px solid #eee;padding:10px;text-align:left;">訂單號</th>
+                        <th style="border:1px solid #eee;padding:10px;text-align:left;">SPTO 單號</th>
+                        <th style="border:1px solid #eee;padding:10px;">掃描 QR</th>
+                        <th style="border:1px solid #eee;padding:10px;text-align:right;">時間</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+            document.body.appendChild(wrap);
+
+            // 等所有 QR 畫好
+            await Promise.all(scannedItems.map((item, i) => new Promise(res => {
+                QRCode.toCanvas(document.getElementById(`pdfqr-${i}`), item.qr, { width: 110, margin: 1 }, () => res());
+            })));
+
+            const canvas = await html2canvas(wrap, { scale: 2, useCORS: true });
+            document.body.removeChild(wrap);
+
             const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
             const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
             const ih = (canvas.height * pw) / canvas.width;
@@ -240,8 +299,6 @@
             pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, pos, pw, ih);
             hl -= ph;
             while (hl > 0) { pos = hl - ih; pdf.addPage(); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, pos, pw, ih); hl -= ph; }
-            const now = new Date();
-            const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
             pdf.save(`${dateStr} 合勝大佃II蝦皮環保包裹 ${scannedItems.length}.pdf`);
         }
     </script>
