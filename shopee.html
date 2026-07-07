@@ -32,10 +32,15 @@
 </head>
 <body>
 
-    <div id="qr-modal" onclick="this.style.display='none'">
-        <p class="text-white mb-4 font-bold tracking-widest uppercase">Tap to close</p>
-        <img id="modal-qr" style="background:white;padding:20px;border-radius:12px;width:300px;height:300px;">
-        <p id="modal-qr-text" class="text-white mt-4 font-mono text-sm break-all max-w-[90%] text-center"></p>
+    <div id="qr-modal">
+        <p class="text-white/80 mb-4 font-bold tracking-widest uppercase text-[11px]">左右滑動切換 · 點空白處關閉</p>
+        <div class="flex items-center gap-3 md:gap-6">
+            <button id="zoom-prev" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">‹</button>
+            <img id="modal-qr" style="background:white;padding:20px;border-radius:12px;width:300px;height:300px;">
+            <button id="zoom-next" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">›</button>
+        </div>
+        <p id="modal-qr-idx" class="text-orange-400 mt-4 font-mono text-sm font-bold"></p>
+        <p id="modal-qr-text" class="text-white/70 mt-1 font-mono text-xs break-all max-w-[90%] text-center"></p>
     </div>
 
     <header class="sticky-header">
@@ -218,13 +223,65 @@
             }
         }
 
-        // ---------- 放大 QR ----------
-        function zoomQR(text) {
-            const modal = document.getElementById('qr-modal');
-            modal.style.display = 'flex';
-            document.getElementById('modal-qr-text').innerText = text;
-            document.getElementById('modal-qr').src = qrDataURL(text, 8, 2);
+        // ---------- 放大 QR（可左右切換）----------
+        let zoomOrder = [];   // 目前放大檢視的順序（與表格相同：最新在最前）
+        let zoomIndex = -1;
+
+        function openZoom(displayIdx) {
+            zoomOrder = [...scannedItems].reverse();
+            showZoomAt(displayIdx);
+            document.getElementById('qr-modal').style.display = 'flex';
         }
+
+        function showZoomAt(idx) {
+            if (idx < 0 || idx >= zoomOrder.length) return;   // 到頭/到尾不動
+            zoomIndex = idx;
+            const item = zoomOrder[idx];
+            document.getElementById('modal-qr').src = qrDataURL(item.qr, 8, 2);
+            document.getElementById('modal-qr-text').innerText = item.qr;
+            document.getElementById('modal-qr-idx').innerText = `${idx + 1} / ${zoomOrder.length}`;
+        }
+
+        function zoomPrev() { showZoomAt(zoomIndex - 1); }
+        function zoomNext() { showZoomAt(zoomIndex + 1); }
+        function closeZoom() { document.getElementById('qr-modal').style.display = 'none'; }
+
+        (function initZoomNav() {
+            const modal = document.getElementById('qr-modal');
+
+            // 箭頭按鈕
+            document.getElementById('zoom-prev').addEventListener('click', (e) => { e.stopPropagation(); zoomPrev(); });
+            document.getElementById('zoom-next').addEventListener('click', (e) => { e.stopPropagation(); zoomNext(); });
+
+            // 點空白處關閉（點 QR / 箭頭不關）
+            modal.addEventListener('click', (e) => {
+                if (['modal-qr', 'zoom-prev', 'zoom-next'].includes(e.target.id)) return;
+                closeZoom();
+            });
+
+            // 手機左右滑動
+            let sx = 0, sy = 0, moved = false;
+            modal.addEventListener('touchstart', (e) => { sx = e.changedTouches[0].clientX; sy = e.changedTouches[0].clientY; moved = false; }, { passive: true });
+            modal.addEventListener('touchmove', () => { moved = true; }, { passive: true });
+            modal.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - sx;
+                const dy = e.changedTouches[0].clientY - sy;
+                if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                    if (dx < 0) zoomPrev();   // 左滑 → 上一個
+                    else zoomNext();          // 右滑 → 下一個
+                } else if (!moved) {
+                    closeZoom();              // 輕點 → 關閉
+                }
+            });
+
+            // 電腦鍵盤：← → 切換，Esc 關閉
+            document.addEventListener('keydown', (e) => {
+                if (modal.style.display !== 'flex') return;
+                if (e.key === 'ArrowLeft') zoomPrev();
+                else if (e.key === 'ArrowRight') zoomNext();
+                else if (e.key === 'Escape') closeZoom();
+            });
+        })();
 
         // ---------- 表格 ----------
         function renderTable() {
@@ -245,7 +302,7 @@
                         </td>
                     </tr>`;
                 tableBody.insertAdjacentHTML('beforeend', row);
-                document.getElementById(`qr-${item.id}`).onclick = () => zoomQR(item.qr);
+                document.getElementById(`qr-${item.id}`).onclick = () => openZoom(index);
             });
             countValue.innerText = scannedItems.length;
         }
