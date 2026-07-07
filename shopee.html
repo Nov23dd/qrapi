@@ -310,54 +310,73 @@
         async function deleteItem(id) { if(confirm('刪除這筆紀錄？')) await _supabase.from('shopee_scans').delete().eq('id', id); }
         async function clearAll() { if(confirm('清空全部紀錄？')) await _supabase.from('shopee_scans').delete().neq('id', 0); }
 
-        // ---------- 匯出 PDF（重新排版成乾淨列印格式，含掃描用 QR）----------
+        // ---------- 匯出 PDF（逐頁渲染，分頁不會切到 QR）----------
         async function exportToPDF() {
             if (scannedItems.length === 0) return;
             const now = new Date();
             const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            const dateFull = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const total = scannedItems.length;
 
-            // 建立離屏列印容器
-            const wrap = document.createElement('div');
-            wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:800px;background:#fff;padding:24px;font-family:Inter,sans-serif;';
-            let rows = '';
-            scannedItems.forEach((item, i) => {
-                rows += `
-                    <tr>
-                        <td style="border:1px solid #eee;padding:14px;text-align:center;font-size:24px;color:#ccc;">${i+1}</td>
-                        <td style="border:1px solid #eee;padding:14px;font-weight:bold;font-size:18px;color:#EE4D2D;">${item.order_no || '-'}</td>
-                        <td style="border:1px solid #eee;padding:14px;font-size:12px;color:#555;">${item.spto || '-'}</td>
-                        <td style="border:1px solid #eee;padding:8px;text-align:center;"><img src="${qrDataURL(item.qr, 5, 1)}" style="width:120px;height:120px;"></td>
-                        <td style="border:1px solid #eee;padding:14px;text-align:right;font-size:10px;color:#999;">${item.time}</td>
-                    </tr>`;
-            });
-            wrap.innerHTML = `
-                <h2 style="font-size:20px;font-weight:700;margin:0 0 16px;">合勝大佃｜蝦皮環保包裹　${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}　共 ${scannedItems.length} 筆</h2>
-                <table style="width:100%;border-collapse:collapse;">
-                    <thead><tr style="background:#FAFAFA;color:#888;font-size:11px;">
-                        <th style="border:1px solid #eee;padding:10px;">No.</th>
-                        <th style="border:1px solid #eee;padding:10px;text-align:left;">訂單號</th>
-                        <th style="border:1px solid #eee;padding:10px;text-align:left;">SPTO 單號</th>
-                        <th style="border:1px solid #eee;padding:10px;">掃描 QR</th>
-                        <th style="border:1px solid #eee;padding:10px;text-align:right;">時間</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>`;
-            document.body.appendChild(wrap);
+            // 建立某一段資料的離屏列印容器（每頁都含標題與表頭）
+            function buildWrap(items, startIdx) {
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:800px;box-sizing:border-box;background:#fff;padding:24px;font-family:Inter,sans-serif;';
+                let rows = '';
+                items.forEach((item, k) => {
+                    rows += `
+                        <tr>
+                            <td style="border:1px solid #eee;padding:14px;text-align:center;font-size:24px;color:#ccc;">${startIdx + k + 1}</td>
+                            <td style="border:1px solid #eee;padding:14px;font-weight:bold;font-size:18px;color:#EE4D2D;">${item.order_no || '-'}</td>
+                            <td style="border:1px solid #eee;padding:14px;font-size:12px;color:#555;">${item.spto || '-'}</td>
+                            <td style="border:1px solid #eee;padding:8px;text-align:center;"><img src="${qrDataURL(item.qr, 5, 1)}" style="width:120px;height:120px;"></td>
+                            <td style="border:1px solid #eee;padding:14px;text-align:right;font-size:10px;color:#999;">${item.time}</td>
+                        </tr>`;
+                });
+                wrap.innerHTML = `
+                    <h2 style="font-size:20px;font-weight:700;margin:0 0 16px;">合勝大佃｜蝦皮環保包裹　${dateFull}　共 ${total} 筆</h2>
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead><tr style="background:#FAFAFA;color:#888;font-size:11px;">
+                            <th style="border:1px solid #eee;padding:10px;">No.</th>
+                            <th style="border:1px solid #eee;padding:10px;text-align:left;">訂單號</th>
+                            <th style="border:1px solid #eee;padding:10px;text-align:left;">SPTO 單號</th>
+                            <th style="border:1px solid #eee;padding:10px;">掃描 QR</th>
+                            <th style="border:1px solid #eee;padding:10px;text-align:right;">時間</th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>`;
+                return wrap;
+            }
 
-            // 等 QR 圖片 (data URL) 解碼完成再截圖
-            await new Promise(res => setTimeout(res, 300));
+            // 1) 先用少量列量測「表頭高 + 單列高」，換算每頁能放幾列
+            const probe = buildWrap(scannedItems.slice(0, Math.min(total, 8)), 0);
+            document.body.appendChild(probe);
+            await new Promise(res => setTimeout(res, 200));
+            const wrapW = probe.getBoundingClientRect().width;
+            const headH = probe.querySelector('h2').getBoundingClientRect().height
+                        + probe.querySelector('thead').getBoundingClientRect().height;
+            const rowH = probe.querySelector('tbody tr').getBoundingClientRect().height;
+            document.body.removeChild(probe);
 
-            const canvas = await html2canvas(wrap, { scale: 2, useCORS: true });
-            document.body.removeChild(wrap);
+            // A4 直式：一頁可用高度（css px）＝寬度換算 × 297/210，保留 8% 安全邊界
+            const pageContentPx = wrapW * (297 / 210) * 0.92 - headH;
+            const rowsPerPage = Math.max(1, Math.floor(pageContentPx / rowH));
 
+            // 2) 一頁一頁渲染並加入 PDF
             const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-            const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
-            const ih = (canvas.height * pw) / canvas.width;
-            let hl = ih, pos = 0;
-            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, pos, pw, ih);
-            hl -= ph;
-            while (hl > 0) { pos = hl - ih; pdf.addPage(); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, pos, pw, ih); hl -= ph; }
-            pdf.save(`${dateStr} 合勝大佃II蝦皮環保包裹 ${scannedItems.length}.pdf`);
+            const pw = pdf.internal.pageSize.getWidth();
+            let page = 0;
+            for (let start = 0; start < total; start += rowsPerPage, page++) {
+                const wrap = buildWrap(scannedItems.slice(start, start + rowsPerPage), start);
+                document.body.appendChild(wrap);
+                await new Promise(res => setTimeout(res, 150));   // 等 QR data URL 解碼
+                const canvas = await html2canvas(wrap, { scale: 2, useCORS: true });
+                document.body.removeChild(wrap);
+                const ih = (canvas.height * pw) / canvas.width;
+                if (page > 0) pdf.addPage();
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pw, ih);
+            }
+            pdf.save(`${dateStr} 合勝大佃II蝦皮環保包裹 ${total}.pdf`);
         }
     </script>
 </body>
