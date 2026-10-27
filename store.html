@@ -232,21 +232,102 @@
         }
 
         // ---------- 相機掃描（長條碼 + QR）----------
+        // Android 用瀏覽器內建辨識（先用一張 QR 自我測試，確認真的能讀才用）；
+        // 不支援或測試失敗（例如 iPhone、部分 Edge）改用相容模式。
+        const NATIVE_WANT = ['qr_code', 'code_128', 'code_39', 'code_93'];
+        let camMode = null;             // 'native' | 'zxing'
+        let nativeStream = null, nativeTimer = null, nativeDetector = null;
+
         function onCamScan(decodedText) {
             const now = Date.now();
             if (now < camCooldownUntil) return;
             const code = normalize(decodedText);
+            if (!code) return;
             if (code === lastCamCode && now - lastCamTime < 3000) return;   // 同一張 3 秒內不重複觸發
             lastCamCode = code; lastCamTime = now;
             camCooldownUntil = now + 800;
             processCode(code);
         }
 
+        const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+        async function nativeSelfTest() {
+            try {
+                if (!('BarcodeDetector' in window)) return null;
+                const supported = await withTimeout(BarcodeDetector.getSupportedFormats(), 1500);
+                const formats = NATIVE_WANT.filter(f => supported.includes(f));
+                if (!formats.includes('qr_code') || !formats.includes('code_128')) return null;
+                const det = new BarcodeDetector({ formats });
+                const cv = document.createElement('canvas'); cv.width = cv.height = 320;
+                const ctx = cv.getContext('2d');
+                drawQR(ctx, 'TW1234567890123', 0, 0, 320);
+                const res = await withTimeout(det.detect(cv), 2000);
+                if (res && res.some(r => r.rawValue === 'TW1234567890123')) return det;
+            } catch (e) {}
+            return null;
+        }
+
+        async function startNative(det) {
+            const reader = document.getElementById('reader');
+            reader.innerHTML = '<video id="cam-video" playsinline muted autoplay style="width:100%;display:block;background:#000"></video>';
+            const video = document.getElementById('cam-video');
+            nativeStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            });
+            video.srcObject = nativeStream;
+            await video.play().catch(() => {});
+            try {
+                const track = nativeStream.getVideoTracks()[0];
+                const caps = track.getCapabilities ? track.getCapabilities() : {};
+                if (caps.focusMode && caps.focusMode.includes('continuous'))
+                    await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            } catch (e) {}
+            nativeDetector = det;
+            let busy = false;
+            const tick = async () => {
+                if (!camOn || camMode !== 'native') return;
+                if (!busy && video.readyState >= 2) {
+                    busy = true;
+                    try {
+                        const found = await withTimeout(nativeDetector.detect(video), 1500);
+                        if (found && found.length) {
+                            const pick = found.find(b => /TW\d{13}/i.test(b.rawValue)) || found[0];
+                            onCamScan(pick.rawValue);
+                        }
+                    } catch (e) {}
+                    busy = false;
+                }
+                nativeTimer = setTimeout(tick, 90);
+            };
+            tick();
+        }
+
+        async function startZxing() {
+            document.getElementById('reader').innerHTML = '';
+            if (!html5Qr) {
+                const F = Html5QrcodeSupportedFormats;
+                html5Qr = new Html5Qrcode('reader', {
+                    formatsToSupport: [F.QR_CODE, F.CODE_128, F.CODE_39, F.CODE_93],
+                    useBarCodeDetectorIfSupported: false,
+                    verbose: false
+                });
+            }
+            await html5Qr.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: (w, h) => ({ width: Math.max(120, Math.floor(w * 0.85)), height: Math.max(120, Math.floor(Math.min(h * 0.85, w * 0.6))) }) },
+                onCamScan, () => {}
+            );
+        }
+
         async function stopCamera() {
-            if (html5Qr && camOn) { try { await html5Qr.stop(); } catch (e) {} }
+            clearTimeout(nativeTimer); nativeTimer = null;
+            if (nativeStream) { nativeStream.getTracks().forEach(t => t.stop()); nativeStream = null; }
+            if (html5Qr && html5Qr.isScanning) { try { await html5Qr.stop(); } catch (e) {} }
+            if (camMode !== 'zxing') document.getElementById('reader').innerHTML = '';
             document.getElementById('reader-wrap').style.display = 'none';
             document.getElementById('cam-btn').innerText = '相機掃描';
-            camOn = false;
+            camOn = false; camMode = null;
         }
 
         async function toggleCamera() {
@@ -257,32 +338,17 @@
             btn.innerText = '關閉相機';
             camOn = true;
             inputEl.blur();
-            if (!html5Qr) {
-                const F = Html5QrcodeSupportedFormats;
-                html5Qr = new Html5Qrcode('reader', {
-                    formatsToSupport: [F.CODE_128, F.CODE_39, F.CODE_93, F.QR_CODE],
-                    useBarCodeDetectorIfSupported: true,
-                    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-                    verbose: false
-                });
-            }
+            setStatus('相機啟動中…', 'blue');
             try {
-                await html5Qr.start(
-                    { facingMode: 'environment' },
-                    {
-                        fps: 15,
-                        qrbox: (w, h) => ({ width: Math.max(120, Math.floor(w * 0.9)), height: Math.max(80, Math.floor(Math.min(h * 0.7, w * 0.6))) }),
-                        aspectRatio: 1.333,
-                        videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-                    },
-                    onCamScan, () => {}
-                );
-                setStatus('相機已開啟，對準條碼或 QR code', 'blue');
+                const det = await nativeSelfTest();
+                if (!camOn) return;
+                if (det) { camMode = 'native'; await startNative(det); }
+                else { camMode = 'zxing'; await startZxing(); }
+                if (!camOn) { await stopCamera(); return; }
+                setStatus(`相機已開啟，對準條碼或 QR code（${camMode === 'native' ? '快速' : '相容'}模式）`, 'blue');
             } catch (err) {
+                await stopCamera();
                 setStatus('相機無法開啟，請允許相機權限', 'red');
-                wrap.style.display = 'none';
-                btn.innerText = '相機掃描';
-                camOn = false;
             }
         }
         document.addEventListener('visibilitychange', () => { if (document.hidden && camOn) stopCamera(); });
