@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>合勝大佃 - 蝦皮店到店掃描</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; background-color: #E5E7EB; color: #1E293B; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .nav-onyx { background: linear-gradient(135deg, #18181B 0%, #27272A 100%); }
+        .shopee-line { height: 3px; background: linear-gradient(90deg, #EE4D2D, #F97316); }
+        .sticky-header { flex-shrink: 0; z-index: 50; }
+        .scanner-card { background: rgba(255, 255, 255, 0.98); border-bottom: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .scrollable-content { flex-grow: 1; overflow-y: auto; padding-bottom: 80px; }
+        .btn-onyx { background: #18181B; color: #F97316; border: 1px solid #3F3F46; transition: all 0.3s; }
+        .btn-onyx:hover { background: #27272A; color: #FFFFFF; }
+        .btn-shopee { background: #EE4D2D; color: #FFFFFF; transition: all 0.3s; }
+        .btn-shopee:hover { background: #D8431F; }
+        #reader { width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
+        #reader-wrap { display: none; }
+        .qr-img { cursor: zoom-in; width: 88px; height: 88px; image-rendering: pixelated; }
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
+        .flash-ok { animation: flashok .5s ease-out; }
+        @keyframes flashok { from { background: #ECFDF5; } to { background: transparent; } }
+    </style>
+</head>
+<body>
+
+    <div id="qr-modal">
+        <p class="text-white/80 mb-4 font-bold tracking-widest text-[11px]">左右滑動切換 · 點空白處關閉</p>
+        <div class="flex items-center gap-3 md:gap-6">
+            <button id="zoom-prev" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">‹</button>
+            <img id="modal-qr" style="background:white;padding:20px;border-radius:12px;width:300px;height:300px;image-rendering:pixelated;">
+            <button id="zoom-next" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">›</button>
+        </div>
+        <p id="modal-qr-idx" class="text-orange-400 mt-4 font-mono text-sm font-bold"></p>
+        <p id="modal-qr-text" class="text-white/70 mt-1 font-mono text-base break-all max-w-[90%] text-center"></p>
+    </div>
+
+    <header class="sticky-header">
+        <nav class="nav-onyx text-white">
+            <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="w-1 h-8 bg-orange-500 rounded-full"></div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tighter italic leading-none">SHOPEE <span class="text-orange-500">店到店</span></h1>
+                        <p class="text-[8px] text-zinc-500 tracking-[0.3em] font-medium mt-1">合勝大佃 | 店到店包裹掃描系統</p>
+                    </div>
+                </div>
+                <div id="item-count" class="bg-zinc-800/50 border border-zinc-700 px-4 py-1 rounded-lg text-center">
+                    <span class="text-[9px] text-zinc-500 font-bold block leading-none mb-1 text-right">件數</span>
+                    <span id="count-value" class="text-xl font-mono text-orange-500 leading-none">0</span>
+                </div>
+            </div>
+            <div class="shopee-line"></div>
+        </nav>
+
+        <div class="scanner-card">
+            <div class="max-w-6xl mx-auto p-4 md:p-6">
+                <div class="flex flex-col lg:flex-row gap-4 items-center">
+                    <div class="flex-1 w-full relative">
+                        <input type="text" id="code-input" autofocus autocomplete="off" autocapitalize="characters" spellcheck="false"
+                               class="w-full pl-6 pr-6 py-4 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-8 focus:ring-orange-500/5 focus:border-zinc-400 outline-none transition-all text-xl font-mono tracking-tighter shadow-inner placeholder:text-zinc-300"
+                               placeholder="掃描條碼或手動輸入寄件編號">
+                    </div>
+                    <div class="flex gap-2 w-full lg:w-auto">
+                        <button onclick="toggleCamera()" id="cam-btn" class="btn-shopee px-6 py-4 rounded-xl font-bold flex-1 lg:flex-none shadow-lg">相機掃描</button>
+                        <button onclick="exportToPDF()" id="pdf-btn" class="btn-onyx px-6 py-4 rounded-xl font-bold flex-1 lg:flex-none shadow-lg">匯出 PDF</button>
+                        <button onclick="clearAll()" aria-label="清空全部" class="bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 px-4 py-4 rounded-xl transition-all shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="reader-wrap" class="mt-4">
+                    <div id="reader"></div>
+                    <p class="text-center text-[11px] text-zinc-400 mt-2 tracking-widest">將條碼或 QR code 對準框內</p>
+                </div>
+                <div id="status-msg" class="mt-3 flex items-center space-x-3">
+                    <span id="status-dot" class="w-2.5 h-2.5 bg-zinc-300 rounded-full"></span>
+                    <p id="status-text" class="text-[11px] font-bold tracking-widest text-zinc-400">系統就緒</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="scrollable-content p-4 md:p-6">
+        <div class="max-w-6xl mx-auto bg-white rounded-[2rem] shadow-xl border border-white overflow-hidden">
+            <table class="w-full border-collapse">
+                <thead class="bg-zinc-50 sticky top-0 z-10 border-b border-zinc-100">
+                    <tr class="text-zinc-400 text-[10px] tracking-[0.2em]">
+                        <th class="py-4 px-3 font-bold w-16 text-center border-r">NO.</th>
+                        <th class="py-4 px-3 font-bold text-left">寄件編號</th>
+                        <th class="py-4 px-3 font-bold text-center w-28">QR（點可放大）</th>
+                        <th class="py-4 px-3 font-bold text-right hidden sm:table-cell">時間</th>
+                        <th class="py-4 px-3 w-12"></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-zinc-50"></tbody>
+            </table>
+            <p id="empty" class="text-center text-zinc-400 text-sm py-12">尚無資料，掃描條碼開始記錄</p>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://cyzjgvdhthrzkfciaqcl.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_GErSlEWWvuOdUU0AN_r3yQ_OjTAyHwZ";
+        const TABLE = 'store_scans';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let scannedItems = [];          // 依 id 由舊到新
+        const inFlight = new Set();      // 正在寫入的碼，避免連刷重複送出
+        let html5Qr = null, camOn = false;
+        let lastCamCode = null, lastCamTime = 0, camCooldownUntil = 0;
+
+        const inputEl = document.getElementById('code-input');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const tableBody = document.getElementById('table-body');
+        const countValue = document.getElementById('count-value');
+
+        // ---------- 音效 / 震動 ----------
+        let audioCtx = null;
+        function playSound(t) {
+            try {
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                if (t === 'success') { o.type='sine'; o.frequency.setValueAtTime(880, now); g.gain.setValueAtTime(0.06, now); o.start(); g.gain.exponentialRampToValueAtTime(0.01, now+0.15); o.stop(now+0.15); }
+                else { o.type='sawtooth'; o.frequency.setValueAtTime(150, now); g.gain.setValueAtTime(0.1, now); o.start(); g.gain.exponentialRampToValueAtTime(0.01, now+0.4); o.stop(now+0.4); }
+            } catch (e) {}
+            try { if (navigator.vibrate) navigator.vibrate(t === 'success' ? 60 : [80, 60, 80]); } catch (e) {}
+        }
+
+        function setStatus(msg, color) {
+            statusText.innerText = msg;
+            const map = { red:'bg-red-500', green:'bg-emerald-500', blue:'bg-blue-500', gray:'bg-zinc-300' };
+            statusDot.className = `w-2.5 h-2.5 ${map[color]||map.gray} rounded-full`;
+            statusText.className = `text-[11px] font-bold tracking-widest ${color==='red'?'text-red-500':color==='green'?'text-emerald-600':'text-zinc-400'}`;
+        }
+
+        // ---------- QR ----------
+        const ALNUM = /^[0-9A-Z $%*+\-./:]+$/;
+        function makeQR(text) {
+            const q = qrcode(0, 'M');
+            q.addData(text, ALNUM.test(text) ? 'Alphanumeric' : 'Byte');
+            q.make();
+            return q;
+        }
+        function qrDataURL(text, cell, margin) { return makeQR(text).createDataURL(cell, margin); }
+
+        // ---------- 資料 ----------
+        function normalize(raw) {
+            let v = String(raw).replace(/[\u0000-\u001F\u007F\s]+/g, '');
+            if (/^[a-z0-9\-_.]+$/i.test(v)) v = v.toUpperCase();
+            // 條碼或 QR 只要含蝦皮寄件編號（TW + 13 碼數字）就統一取出，兩種刷法算同一件
+            const m = v.toUpperCase().match(/TW\d{13}/);
+            if (m) v = m[0];
+            return v;
+        }
+
+        window.onload = async () => {
+            await refreshData();
+            inputEl.focus();
+            _supabase.channel('store-channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, refreshData)
+                .subscribe();
+        };
+
+        let refreshing = null;
+        async function refreshData() {
+            if (refreshing) return refreshing;
+            refreshing = (async () => {
+                const { data, error } = await _supabase.from(TABLE).select('*').order('id', { ascending: true });
+                if (error) setStatus('讀取失敗：' + error.message, 'red');
+                else { scannedItems = data || []; renderTable(); }
+            })();
+            try { await refreshing; } finally { refreshing = null; }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (camOn) return;
+            if (e.target.closest('button, img, input, #qr-modal')) return;
+            inputEl.focus();
+        });
+
+        inputEl.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const v = inputEl.value;
+                if (!v.trim()) { if (e.key === 'Enter') e.preventDefault(); return; }
+                e.preventDefault();
+                inputEl.value = '';
+                await processCode(v);
+            }
+        });
+
+        async function processCode(raw) {
+            const code = normalize(raw);
+            if (!code) return;
+            if (code.length < 6 || code.length > 60) {
+                playSound('error'); setStatus(`條碼格式不對：${code}，請重掃`, 'red'); return;
+            }
+            const dupIdx = scannedItems.findIndex(i => i.code === code);
+            if (dupIdx !== -1 || inFlight.has(code)) {
+                playSound('error');
+                setStatus(dupIdx !== -1 ? `重複：已在第 ${dupIdx + 1} 件 ${code}` : `重複：${code}`, 'red');
+                return;
+            }
+            inFlight.add(code);
+            const now = new Date();
+            const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toLocaleTimeString('en-GB')}`;
+            try {
+                const { error } = await _supabase.from(TABLE).insert([{ code, time: ts }]);
+                if (error) {
+                    playSound('error');
+                    if (error.code === '23505') setStatus(`重複：${code}`, 'red');
+                    else setStatus('寫入失敗：' + error.message, 'red');
+                    return;
+                }
+                playSound('success');
+                setStatus(`已記錄 ${code}`, 'green');
+                await refreshData();
+            } finally {
+                inFlight.delete(code);
+            }
+        }
+
+        // ---------- 相機掃描（長條碼 + QR）----------
+        function onCamScan(decodedText) {
+            const now = Date.now();
+            if (now < camCooldownUntil) return;
+            const code = normalize(decodedText);
+            if (code === lastCamCode && now - lastCamTime < 3000) return;   // 同一張 3 秒內不重複觸發
+            lastCamCode = code; lastCamTime = now;
+            camCooldownUntil = now + 800;
+            processCode(code);
+        }
+
+        async function stopCamera() {
+            if (html5Qr && camOn) { try { await html5Qr.stop(); } catch (e) {} }
+            document.getElementById('reader-wrap').style.display = 'none';
+            document.getElementById('cam-btn').innerText = '相機掃描';
+            camOn = false;
+        }
+
+        async function toggleCamera() {
+            if (camOn) { await stopCamera(); inputEl.focus(); return; }
+            const wrap = document.getElementById('reader-wrap');
+            const btn = document.getElementById('cam-btn');
+            wrap.style.display = 'block';
+            btn.innerText = '關閉相機';
+            camOn = true;
+            inputEl.blur();
+            if (!html5Qr) {
+                const F = Html5QrcodeSupportedFormats;
+                html5Qr = new Html5Qrcode('reader', {
+                    formatsToSupport: [F.CODE_128, F.CODE_39, F.CODE_93, F.QR_CODE],
+                    useBarCodeDetectorIfSupported: true,
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                    verbose: false
+                });
+            }
+            try {
+                await html5Qr.start(
+                    { facingMode: 'environment' },
+                    {
+                        fps: 15,
+                        qrbox: (w, h) => ({ width: Math.max(120, Math.floor(w * 0.9)), height: Math.max(80, Math.floor(Math.min(h * 0.7, w * 0.6))) }),
+                        aspectRatio: 1.333,
+                        videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                    },
+                    onCamScan, () => {}
+                );
+                setStatus('相機已開啟，對準條碼或 QR code', 'blue');
+            } catch (err) {
+                setStatus('相機無法開啟，請允許相機權限', 'red');
+                wrap.style.display = 'none';
+                btn.innerText = '相機掃描';
+                camOn = false;
+            }
+        }
+        document.addEventListener('visibilitychange', () => { if (document.hidden && camOn) stopCamera(); });
+
+        // ---------- 放大 QR（可左右切換）----------
+        let zoomOrder = [], zoomIndex = -1;
+        function openZoom(displayIdx) {
+            zoomOrder = [...scannedItems].reverse();
+            showZoomAt(displayIdx);
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+        function showZoomAt(idx) {
+            if (idx < 0 || idx >= zoomOrder.length) return;
+            zoomIndex = idx;
+            const item = zoomOrder[idx];
+            document.getElementById('modal-qr').src = qrDataURL(item.code, 8, 2);
+            document.getElementById('modal-qr-text').innerText = item.code;
+            document.getElementById('modal-qr-idx').innerText = `第 ${zoomOrder.length - idx} 件 · ${idx + 1} / ${zoomOrder.length}`;
+        }
+        function zoomPrev() { showZoomAt(zoomIndex - 1); }
+        function zoomNext() { showZoomAt(zoomIndex + 1); }
+        function closeZoom() { document.getElementById('qr-modal').style.display = 'none'; }
+        (function initZoomNav() {
+            const modal = document.getElementById('qr-modal');
+            document.getElementById('zoom-prev').addEventListener('click', (e) => { e.stopPropagation(); zoomPrev(); });
+            document.getElementById('zoom-next').addEventListener('click', (e) => { e.stopPropagation(); zoomNext(); });
+            modal.addEventListener('click', (e) => {
+                if (['modal-qr', 'zoom-prev', 'zoom-next'].includes(e.target.id)) return;
+                closeZoom();
+            });
+            let sx = 0, sy = 0, moved = false;
+            modal.addEventListener('touchstart', (e) => { sx = e.changedTouches[0].clientX; sy = e.changedTouches[0].clientY; moved = false; }, { passive: true });
+            modal.addEventListener('touchmove', () => { moved = true; }, { passive: true });
+            modal.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+                if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { if (dx < 0) zoomPrev(); else zoomNext(); }
+                else if (!moved && !['zoom-prev','zoom-next'].includes(e.target.id)) closeZoom();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (modal.style.display !== 'flex') return;
+                if (e.key === 'ArrowLeft') zoomPrev();
+                else if (e.key === 'ArrowRight') zoomNext();
+                else if (e.key === 'Escape') closeZoom();
+            });
+        })();
+
+        // ---------- 表格 ----------
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        function renderTable() {
+            const n = scannedItems.length;
+            const rows = [...scannedItems].reverse().map((item, index) => {
+                const num = n - index;
+                return `
+                    <tr class="hover:bg-zinc-50 transition-colors">
+                        <td class="p-3 text-center font-bold text-zinc-300 text-2xl border-r">${num}</td>
+                        <td class="p-3 font-mono font-bold text-base sm:text-lg text-orange-600 break-all">${esc(item.code)}
+                            <div class="sm:hidden font-normal text-[10px] text-zinc-400 mt-1">${esc(item.time || '')}</div></td>
+                        <td class="p-2 text-center"><img data-zoom="${index}" src="${qrDataURL(item.code, 4, 1)}" class="qr-img inline-block" alt="QR"></td>
+                        <td class="p-3 text-right font-mono text-[10px] text-zinc-400 hidden sm:table-cell">${esc(item.time || '')}</td>
+                        <td class="p-3 text-center">
+                            <button data-del="${item.id}" aria-label="刪除" class="text-zinc-300 hover:text-red-500 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+            tableBody.innerHTML = rows;
+            document.getElementById('empty').style.display = n ? 'none' : 'block';
+            countValue.innerText = n;
+        }
+        tableBody.addEventListener('click', (e) => {
+            const img = e.target.closest('[data-zoom]');
+            if (img) { openZoom(Number(img.dataset.zoom)); return; }
+            const del = e.target.closest('[data-del]');
+            if (del) deleteItem(Number(del.dataset.del));
+        });
+
+        async function deleteItem(id) {
+            const item = scannedItems.find(i => i.id === id);
+            if (!confirm(`刪除 ${item ? item.code : '這筆紀錄'}？`)) return;
+            const { error } = await _supabase.from(TABLE).delete().eq('id', id);
+            if (error) setStatus('刪除失敗：' + error.message, 'red');
+            await refreshData();
+        }
+        async function clearAll() {
+            if (!scannedItems.length) return;
+            if (!confirm(`清空全部 ${scannedItems.length} 件紀錄？`)) return;
+            const { error } = await _supabase.from(TABLE).delete().gt('id', 0);
+            if (error) setStatus('清空失敗：' + error.message, 'red');
+            else setStatus('已清空', 'gray');
+            await refreshData();
+        }
+
+        // ---------- 匯出 PDF（每件一個 QR，A4 一列 5 個）----------
+        const PW = 595.28, PH = 841.89, M = 36, S = 2.5;
+        const COLS = 5, CELL_H = 112, QR = 76, BOTTOM = PH - M - 20;
+        const SANS = '"PingFang TC","Noto Sans TC","Microsoft JhengHei",Inter,sans-serif';
+        const MONO = 'Menlo,Consolas,"Roboto Mono",monospace';
+        const pad = n => String(n).padStart(2, '0');
+
+        function drawQR(ctx, text, x, y, size) {
+            const q = makeQR(text), n = q.getModuleCount(), quiet = 3, m = size / (n + quiet * 2);
+            ctx.fillStyle = '#fff'; ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = '#000';
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
+                if (q.isDark(r, c)) ctx.fillRect(x + (c + quiet) * m, y + (r + quiet) * m, m + 0.02, m + 0.02);
+        }
+
+        function planPages(n) {
+            const pages = []; let i = 0, first = true;
+            while (i < n) {
+                const top = first ? M + 70 : M + 30;
+                const rows = Math.max(1, Math.floor((BOTTOM - top) / CELL_H));
+                const take = Math.min(n - i, rows * COLS);
+                pages.push({ start: i, count: take, top, first });
+                i += take; first = false;
+            }
+            const last = pages[pages.length - 1];
+            const sigY = last.top + Math.ceil(last.count / COLS) * CELL_H + 22;
+            if (sigY + 48 <= BOTTOM) last.sigY = sigY;
+            else pages.push({ start: n, count: 0, top: M + 30, first: false, sigY: M + 50 });
+            return pages;
+        }
+
+        function drawPage(items, pg, pi, total, dateFull) {
+            const n = items.length;
+            const cv = document.createElement('canvas');
+            cv.width = Math.round(PW * S); cv.height = Math.round(PH * S);
+            const ctx = cv.getContext('2d');
+            ctx.scale(S, S);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, PW, PH);
+            const ink = '#18181B', muted = '#71717A', line = '#D4D4D8', accent = '#EE4D2D';
+
+            if (pg.first) {
+                ctx.fillStyle = ink; ctx.font = `700 18px ${SANS}`; ctx.textAlign = 'left';
+                ctx.fillText('合勝大佃｜蝦皮店到店', M, M + 20);
+                ctx.fillStyle = muted; ctx.font = `400 10px ${SANS}`;
+                ctx.fillText(dateFull, M, M + 40);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = ink; ctx.font = `500 14px ${SANS}`;
+                const jw = ctx.measureText('件').width;
+                ctx.fillText('件', PW - M, M + 44);
+                ctx.fillStyle = accent; ctx.font = `700 36px ${MONO}`;
+                const nw = ctx.measureText(String(n)).width;
+                ctx.fillText(String(n), PW - M - jw - 4, M + 44);
+                ctx.fillStyle = muted; ctx.font = `500 11px ${SANS}`;
+                ctx.fillText('共', PW - M - jw - 8 - nw, M + 44);
+                ctx.textAlign = 'left';
+                ctx.strokeStyle = ink; ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(M, M + 56); ctx.lineTo(PW - M, M + 56); ctx.stroke();
+            } else {
+                ctx.fillStyle = muted; ctx.font = `500 10px ${SANS}`; ctx.textAlign = 'left';
+                ctx.fillText(`合勝大佃｜蝦皮店到店　${dateFull}`, M, M + 12);
+                ctx.textAlign = 'right'; ctx.fillText(`共 ${n} 件`, PW - M, M + 12); ctx.textAlign = 'left';
+                ctx.strokeStyle = line; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(M, M + 20); ctx.lineTo(PW - M, M + 20); ctx.stroke();
+            }
+
+            const cellW = (PW - 2 * M) / COLS;
+            for (let k = 0; k < pg.count; k++) {
+                const idx = pg.start + k, it = items[idx];
+                const x = M + (k % COLS) * cellW, y = pg.top + Math.floor(k / COLS) * CELL_H;
+                ctx.strokeStyle = line; ctx.lineWidth = 0.6;
+                ctx.strokeRect(x + 0.3, y + 0.3, cellW - 0.6, CELL_H - 0.6);
+                ctx.fillStyle = muted; ctx.font = `700 8px ${MONO}`; ctx.textAlign = 'left';
+                ctx.fillText(String(idx + 1), x + 5, y + 11);
+                drawQR(ctx, it.code, x + (cellW - QR) / 2, y + 12, QR);
+                ctx.fillStyle = ink; ctx.font = `500 7.5px ${MONO}`; ctx.textAlign = 'center';
+                ctx.fillText(it.code, x + cellW / 2, y + QR + 24, cellW - 8);
+                ctx.fillStyle = muted; ctx.font = `400 6.5px ${MONO}`;
+                ctx.fillText(String(it.time || '').slice(-8), x + cellW / 2, y + QR + 33);
+                ctx.textAlign = 'left';
+            }
+
+            if (pg.sigY) {
+                const y = pg.sigY, w = (PW - 2 * M - 40) / 3;
+                ['交寄人簽名', '收件人簽名', '日期'].forEach((lab, k) => {
+                    const x = M + k * (w + 20);
+                    ctx.strokeStyle = ink; ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.moveTo(x, y + 26); ctx.lineTo(x + w, y + 26); ctx.stroke();
+                    ctx.fillStyle = muted; ctx.font = `400 9px ${SANS}`;
+                    ctx.fillText(lab, x, y + 40);
+                });
+            }
+
+            ctx.fillStyle = muted; ctx.font = `400 8.5px ${SANS}`;
+            ctx.fillText(`共 ${n} 件`, M, PH - M + 8);
+            ctx.textAlign = 'right'; ctx.fillText(`第 ${pi + 1} / ${total} 頁`, PW - M, PH - M + 8); ctx.textAlign = 'left';
+            return cv;
+        }
+
+        async function exportToPDF() {
+            await refreshData();                       // 匯出前先抓最新資料，避免漏件
+            const items = [...scannedItems];
+            if (!items.length) { setStatus('沒有資料可匯出', 'red'); return; }
+            const btn = document.getElementById('pdf-btn');
+            btn.disabled = true; btn.innerText = '產生中…';
+            try {
+                const now = new Date();
+                const dateStr = `${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+                const dateFull = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+                const pages = planPages(items.length);
+                const pdf = new jspdf.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+                pages.forEach((pg, i) => {
+                    if (i) pdf.addPage();
+                    const cv = drawPage(items, pg, i, pages.length, dateFull);
+                    pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0, 0, PW, PH, undefined, 'FAST');
+                });
+                pdf.save(`${dateStr} 合勝大佃II蝦皮店到店 ${items.length}.pdf`);
+                setStatus(`已匯出 PDF，共 ${items.length} 件`, 'green');
+            } catch (e) {
+                setStatus('PDF 產生失敗：' + e.message, 'red');
+            } finally {
+                btn.disabled = false; btn.innerText = '匯出 PDF';
+            }
+        }
+    </script>
+</body>
+</html>
