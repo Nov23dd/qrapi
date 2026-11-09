@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>合勝大佃 - 7-11 / 全家寄件掃描</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; background-color: #E5E7EB; color: #1E293B; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .nav-onyx { background: linear-gradient(135deg, #18181B 0%, #27272A 100%); }
+        .shopee-line { height: 3px; background: linear-gradient(90deg, #EE4D2D, #F97316); }
+        .sticky-header { flex-shrink: 0; z-index: 50; }
+        .scanner-card { background: rgba(255, 255, 255, 0.98); border-bottom: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .scrollable-content { flex-grow: 1; overflow-y: auto; padding-bottom: 80px; }
+        .btn-onyx { background: #18181B; color: #F97316; border: 1px solid #3F3F46; transition: all 0.3s; }
+        .btn-onyx:hover { background: #27272A; color: #FFFFFF; }
+        .btn-onyx:disabled { opacity: .5; }
+        .btn-shopee { background: #EE4D2D; color: #FFFFFF; transition: all 0.3s; }
+        .btn-shopee:hover { background: #D8431F; }
+        .tab { flex: 1; padding: 10px 12px; border-radius: 10px; font-weight: 700; color: #71717A; display: flex; align-items: baseline; justify-content: center; gap: 8px; transition: all .2s; }
+        .tab .n { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 18px; }
+        .tab[aria-selected="true"] { background: #18181B; color: #fff; }
+        .tab[aria-selected="true"] .n { color: #F97316; }
+        #reader { width: 100%; max-width: 420px; margin: 0 auto; border-radius: 12px; overflow: hidden; }
+        #reader-wrap { display: none; }
+        .qr-img { cursor: zoom-in; width: 88px; height: 88px; image-rendering: pixelated; }
+        #qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; flex-direction: column; }
+    </style>
+</head>
+<body>
+
+    <div id="qr-modal">
+        <p class="text-white/80 mb-4 font-bold tracking-widest text-[11px]">左右滑動切換 · 點空白處關閉</p>
+        <div class="flex items-center gap-3 md:gap-6">
+            <button id="zoom-prev" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">‹</button>
+            <img id="modal-qr" style="background:white;padding:20px;border-radius:12px;width:300px;height:300px;image-rendering:pixelated;">
+            <button id="zoom-next" class="text-white/50 hover:text-white text-5xl leading-none px-2 select-none">›</button>
+        </div>
+        <p id="modal-qr-idx" class="text-orange-400 mt-4 font-mono text-sm font-bold"></p>
+        <p id="modal-qr-text" class="text-white/70 mt-1 font-mono text-base break-all max-w-[90%] text-center"></p>
+    </div>
+
+    <header class="sticky-header">
+        <nav class="nav-onyx text-white">
+            <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="w-1 h-8 bg-orange-500 rounded-full"></div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tighter italic leading-none">SHOPEE <span class="text-orange-500">超商寄件</span></h1>
+                        <p class="text-[8px] text-zinc-500 tracking-[0.3em] font-medium mt-1">合勝大佃 | 7-11 · 全家掃描系統</p>
+                    </div>
+                </div>
+                <div class="bg-zinc-800/50 border border-zinc-700 px-4 py-1 rounded-lg text-center">
+                    <span id="count-label" class="text-[9px] text-zinc-500 font-bold block leading-none mb-1 text-right">7-11 件數</span>
+                    <span id="count-value" class="text-xl font-mono text-orange-500 leading-none">0</span>
+                </div>
+            </div>
+            <div class="shopee-line"></div>
+        </nav>
+
+        <div class="scanner-card">
+            <div class="max-w-6xl mx-auto p-4 md:p-6">
+                <div class="flex gap-2 mb-3 bg-zinc-100 p-1 rounded-xl" role="tablist">
+                    <button class="tab" role="tab" data-store="711" aria-selected="true">7-11 <span class="n" id="n-711">0</span></button>
+                    <button class="tab" role="tab" data-store="fm" aria-selected="false">全家 <span class="n" id="n-fm">0</span></button>
+                </div>
+                <div class="flex flex-col lg:flex-row gap-4 items-center">
+                    <div class="flex-1 w-full relative">
+                        <input type="text" id="code-input" autofocus autocomplete="off" autocapitalize="off" spellcheck="false"
+                               class="w-full pl-6 pr-6 py-4 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-8 focus:ring-orange-500/5 focus:border-zinc-400 outline-none transition-all text-xl font-mono tracking-tighter shadow-inner placeholder:text-zinc-300"
+                               placeholder="掃描 QR code">
+                    </div>
+                    <div class="flex gap-2 w-full lg:w-auto">
+                        <button onclick="toggleCamera()" id="cam-btn" class="btn-shopee px-6 py-4 rounded-xl font-bold flex-1 lg:flex-none shadow-lg">相機掃描</button>
+                        <button onclick="exportToPDF()" id="pdf-btn" class="btn-onyx px-6 py-4 rounded-xl font-bold flex-1 lg:flex-none shadow-lg">匯出 7-11 PDF</button>
+                        <button onclick="clearStore()" id="clear-btn" aria-label="清空" class="bg-white border border-zinc-200 text-zinc-400 hover:text-red-500 px-4 py-4 rounded-xl transition-all shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="reader-wrap" class="mt-4">
+                    <div id="reader"></div>
+                    <p class="text-center text-[11px] text-zinc-400 mt-2 tracking-widest">7-11 對準左邊小顆 QR · 全家對準右上角 QR</p>
+                </div>
+                <div class="mt-3 flex items-center space-x-3">
+                    <span id="status-dot" class="w-2.5 h-2.5 bg-zinc-300 rounded-full"></span>
+                    <p id="status-text" class="text-[11px] font-bold tracking-widest text-zinc-400">7-11 刷左邊小顆 QR · 全家刷右上角 QR</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="scrollable-content p-4 md:p-6">
+        <div class="max-w-6xl mx-auto bg-white rounded-[2rem] shadow-xl border border-white overflow-hidden">
+            <table class="w-full border-collapse">
+                <thead class="bg-zinc-50 sticky top-0 z-10 border-b border-zinc-100">
+                    <tr class="text-zinc-400 text-[10px] tracking-[0.2em]">
+                        <th class="py-4 px-3 font-bold w-16 text-center border-r">NO.</th>
+                        <th class="py-4 px-3 font-bold text-left" id="col-name">物流條碼</th>
+                        <th class="py-4 px-3 font-bold text-center w-28">QR（點可放大）</th>
+                        <th class="py-4 px-3 font-bold text-right hidden sm:table-cell">時間</th>
+                        <th class="py-4 px-3 w-12"></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-zinc-50"></tbody>
+            </table>
+            <p id="empty" class="text-center text-zinc-400 text-sm py-12">尚無資料</p>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = "https://cyzjgvdhthrzkfciaqcl.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_GErSlEWWvuOdUU0AN_r3yQ_OjTAyHwZ";
+        const TABLE = 'cvs_scans';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const STORES = {
+            '711': { name: '7-11', col: '物流條碼', hint: '刷左邊小顆 QR' },
+            'fm':  { name: '全家', col: '蝦皮訂單編號', hint: '刷右上角 QR' }
+        };
+        let active = '711';
+        try { const s = localStorage.getItem('cvs-active'); if (STORES[s]) active = s; } catch (e) {}
+
+        let allItems = [];                 // 兩家全部資料，依 id 由舊到新
+        const inFlight = new Set();        // 正在寫入的 store|ref，避免連刷重複送出
+        let html5Qr = null, camOn = false;
+        let lastCamCode = null, lastCamTime = 0, camCooldownUntil = 0;
+
+        const inputEl = document.getElementById('code-input');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const tableBody = document.getElementById('table-body');
+
+        const itemsOf = (store) => allItems.filter(i => i.store === store);
+        const pad = n => String(n).padStart(2, '0');
+
+        // ---------- 音效 / 震動 ----------
+        let audioCtx = null;
+        function playSound(t) {
+            try {
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                if (t === 'success') { o.type='sine'; o.frequency.setValueAtTime(880, now); g.gain.setValueAtTime(0.06, now); o.start(); g.gain.exponentialRampToValueAtTime(0.01, now+0.15); o.stop(now+0.15); }
+                else { o.type='sawtooth'; o.frequency.setValueAtTime(150, now); g.gain.setValueAtTime(0.1, now); o.start(); g.gain.exponentialRampToValueAtTime(0.01, now+0.4); o.stop(now+0.4); }
+            } catch (e) {}
+            try { if (navigator.vibrate) navigator.vibrate(t === 'success' ? 60 : [80, 60, 80]); } catch (e) {}
+        }
+
+        function setStatus(msg, color) {
+            statusText.innerText = msg;
+            const map = { red:'bg-red-500', green:'bg-emerald-500', blue:'bg-blue-500', gray:'bg-zinc-300' };
+            statusDot.className = `w-2.5 h-2.5 ${map[color]||map.gray} rounded-full`;
+            statusText.className = `text-[11px] font-bold tracking-widest ${color==='red'?'text-red-500':color==='green'?'text-emerald-600':'text-zinc-400'}`;
+        }
+
+        // ---------- QR ----------
+        const ALNUM = /^[0-9A-Z $%*+\-./:]+$/;
+        function makeQR(text) {
+            const q = qrcode(0, 'M');
+            q.addData(text, ALNUM.test(text) ? 'Alphanumeric' : 'Byte');
+            q.make();
+            return q;
+        }
+        function qrDataURL(text, cell, margin) { return makeQR(text).createDataURL(cell, margin); }
+
+        // ---------- 辨識：哪一家、哪一個 QR ----------
+        // 全家右上角 QR：A3||...||...||蝦皮訂單編號（以 || 分隔，結尾可能有空白，原樣保留）
+        // 7-11 左邊小顆 QR：物流條碼，例如 833001H326695669
+        function classify(raw) {
+            const t = String(raw).replace(/^[\r\n]+|[\r\n]+$/g, '');   // 只去掉頭尾換行，其他字元原樣保留
+            const s = t.trim();
+            if (!s) return null;
+            if (s.includes('||')) {
+                const parts = s.split('||').map(p => p.trim());
+                if (parts.length < 8 || !parts[1]) return { error: '全家 QR 內容不完整，請重刷' };
+                const order = [...parts].reverse().find(p => /^\d{6}[A-Z0-9]{8}$/.test(p)) || '';
+                const m = parts[1].match(/^\d{6}(\d{11})[A-Z]$/);
+                return { store: 'fm', qr: t, ref: parts[1], order_no: order, fm_no: m ? m[1] : '' };
+            }
+            if (s.startsWith('{') && /Utility/i.test(s)) return { error: '這是 7-11 大顆 QR，請刷左邊小顆 QR' };
+            const u = s.toUpperCase();
+            if (/^\d{6}[A-Z]\d{9}$/.test(u)) return { store: '711', qr: u, ref: u, order_no: '', fm_no: '' };
+            if (/^\d{9}$|^\d{16}$|^\d[A-Z]{2}\d{2}$/.test(u)) return { error: '這是全家條碼，請刷右上角 QR' };
+            return { error: `無法辨識：${s.length > 30 ? s.slice(0, 30) + '…' : s}` };
+        }
+
+        // ---------- 資料 ----------
+        window.onload = async () => {
+            renderTabs();
+            await refreshData();
+            inputEl.focus();
+            _supabase.channel('cvs-channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => refreshData())
+                .subscribe();
+        };
+
+        // 一次抓完全部（超過 1000 筆也會分頁抓齊）；讀取中又有變動會再抓一次，不會漏
+        let refreshing = null, dirty = false;
+        async function fetchAll() {
+            const out = [];
+            for (let from = 0; ; from += 1000) {
+                const { data, error } = await _supabase.from(TABLE).select('*').order('id', { ascending: true }).range(from, from + 999);
+                if (error) throw error;
+                out.push(...data);
+                if (data.length < 1000) return out;
+            }
+        }
+        async function refreshData() {
+            if (refreshing) { dirty = true; return refreshing; }
+            refreshing = (async () => {
+                do {
+                    dirty = false;
+                    try { allItems = await fetchAll(); renderTable(); }
+                    catch (e) { setStatus('讀取失敗：' + (e.message || e), 'red'); }
+                } while (dirty);
+            })();
+            try { await refreshing; } finally { refreshing = null; }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (camOn) return;
+            if (e.target.closest('button, img, input, #qr-modal')) return;
+            inputEl.focus();
+        });
+
+        inputEl.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const v = inputEl.value;
+                if (!v.trim()) { if (e.key === 'Enter') e.preventDefault(); return; }
+                e.preventDefault();
+                inputEl.value = '';
+                await processCode(v);
+            }
+        });
+
+        function setActive(store) {
+            if (!STORES[store] || store === active) return;
+            active = store;
+            try { localStorage.setItem('cvs-active', store); } catch (e) {}
+            renderTabs(); renderTable();
+        }
+        document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setActive(b.dataset.store)));
+
+        async function processCode(raw) {
+            const c = classify(raw);
+            if (!c) return;
+            if (c.error) { playSound('error'); setStatus(c.error, 'red'); return; }
+            const name = STORES[c.store].name;
+            setActive(c.store);                       // 刷到哪一家就切到哪一家
+            const list = itemsOf(c.store);
+            const dupIdx = list.findIndex(i => i.ref === c.ref);
+            const key = c.store + '|' + c.ref;
+            if (dupIdx !== -1 || inFlight.has(key)) {
+                playSound('error');
+                setStatus(dupIdx !== -1 ? `重複：${name} 第 ${dupIdx + 1} 件` : `重複：${name}`, 'red');
+                return;
+            }
+            inFlight.add(key);
+            const now = new Date();
+            const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${now.toLocaleTimeString('en-GB')}`;
+            try {
+                const { error } = await _supabase.from(TABLE).insert([{ store: c.store, qr: c.qr, ref: c.ref, order_no: c.order_no, fm_no: c.fm_no, time: ts }]);
+                if (error) {
+                    playSound('error');
+                    if (error.code === '23505') setStatus(`重複：${name}`, 'red');
+                    else setStatus('寫入失敗：' + error.message, 'red');
+                    return;
+                }
+                playSound('success');
+                await refreshData();
+                setStatus(`${name} 第 ${itemsOf(c.store).length} 件　${c.store === 'fm' ? (c.order_no || c.ref) : c.ref}`, 'green');
+            } finally {
+                inFlight.delete(key);
+            }
+        }
+
+        // ---------- 相機掃描（只讀 QR）----------
+        // Android 用瀏覽器內建辨識（先自我測試，確認真的能讀才用）；不支援或測試失敗改用相容模式。
+        let camMode = null;             // 'native' | 'zxing'
+        let nativeStream = null, nativeTimer = null, nativeDetector = null;
+
+        function onCamScan(decodedText) {
+            const now = Date.now();
+            if (now < camCooldownUntil) return;
+            if (!decodedText) return;
+            if (decodedText === lastCamCode && now - lastCamTime < 3000) return;   // 同一張 3 秒內不重複觸發
+            lastCamCode = decodedText; lastCamTime = now;
+            camCooldownUntil = now + 800;
+            processCode(decodedText);
+        }
+
+        const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
+        async function nativeSelfTest() {
+            try {
+                if (!('BarcodeDetector' in window)) return null;
+                const supported = await withTimeout(BarcodeDetector.getSupportedFormats(), 1500);
+                if (!supported.includes('qr_code')) return null;
+                const det = new BarcodeDetector({ formats: ['qr_code'] });
+                const cv = document.createElement('canvas'); cv.width = cv.height = 320;
+                drawQR(cv.getContext('2d'), '833001H123456789', 0, 0, 320);
+                const res = await withTimeout(det.detect(cv), 2000);
+                if (res && res.some(r => r.rawValue === '833001H123456789')) return det;
+            } catch (e) {}
+            return null;
+        }
+
+        async function startNative(det) {
+            const reader = document.getElementById('reader');
+            reader.innerHTML = '<video id="cam-video" playsinline muted autoplay style="width:100%;display:block;background:#000"></video>';
+            const video = document.getElementById('cam-video');
+            nativeStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+            });
+            video.srcObject = nativeStream;
+            await video.play().catch(() => {});
+            try {
+                const track = nativeStream.getVideoTracks()[0];
+                const caps = track.getCapabilities ? track.getCapabilities() : {};
+                if (caps.focusMode && caps.focusMode.includes('continuous'))
+                    await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            } catch (e) {}
+            nativeDetector = det;
+            let busy = false;
+            const tick = async () => {
+                if (!camOn || camMode !== 'native') return;
+                if (!busy && video.readyState >= 2) {
+                    busy = true;
+                    try {
+                        const found = await withTimeout(nativeDetector.detect(video), 1500);
+                        if (found && found.length) {
+                            // 畫面裡有兩顆 QR 時（例如 7-11 標籤），優先取能辨識的那顆
+                            const pick = found.find(b => { const c = classify(b.rawValue); return c && !c.error; }) || found[0];
+                            onCamScan(pick.rawValue);
+                        }
+                    } catch (e) {}
+                    busy = false;
+                }
+                nativeTimer = setTimeout(tick, 90);
+            };
+            tick();
+        }
+
+        async function startZxing() {
+            document.getElementById('reader').innerHTML = '';
+            if (!html5Qr) {
+                html5Qr = new Html5Qrcode('reader', {
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                    useBarCodeDetectorIfSupported: false,
+                    verbose: false
+                });
+            }
+            await html5Qr.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: (w, h) => { const s = Math.max(150, Math.floor(Math.min(w, h) * 0.8)); return { width: s, height: s }; } },
+                onCamScan, () => {}
+            );
+        }
+
+        async function stopCamera() {
+            clearTimeout(nativeTimer); nativeTimer = null;
+            if (nativeStream) { nativeStream.getTracks().forEach(t => t.stop()); nativeStream = null; }
+            if (html5Qr && html5Qr.isScanning) { try { await html5Qr.stop(); } catch (e) {} }
+            if (camMode !== 'zxing') document.getElementById('reader').innerHTML = '';
+            document.getElementById('reader-wrap').style.display = 'none';
+            document.getElementById('cam-btn').innerText = '相機掃描';
+            camOn = false; camMode = null;
+        }
+
+        async function toggleCamera() {
+            if (camOn) { await stopCamera(); inputEl.focus(); return; }
+            const wrap = document.getElementById('reader-wrap');
+            const btn = document.getElementById('cam-btn');
+            wrap.style.display = 'block';
+            btn.innerText = '關閉相機';
+            camOn = true;
+            inputEl.blur();
+            setStatus('相機啟動中…', 'blue');
+            try {
+                const det = await nativeSelfTest();
+                if (!camOn) return;
+                if (det) { camMode = 'native'; await startNative(det); }
+                else { camMode = 'zxing'; await startZxing(); }
+                if (!camOn) { await stopCamera(); return; }
+                setStatus(`相機已開啟（${camMode === 'native' ? '快速' : '相容'}模式）`, 'blue');
+            } catch (err) {
+                await stopCamera();
+                setStatus('相機無法開啟，請允許相機權限', 'red');
+            }
+        }
+        document.addEventListener('visibilitychange', () => { if (document.hidden && camOn) stopCamera(); });
+
+        // ---------- 放大 QR（可左右切換）----------
+        let zoomOrder = [], zoomIndex = -1;
+        function openZoom(displayIdx) {
+            zoomOrder = [...itemsOf(active)].reverse();
+            showZoomAt(displayIdx);
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+        function showZoomAt(idx) {
+            if (idx < 0 || idx >= zoomOrder.length) return;
+            zoomIndex = idx;
+            const item = zoomOrder[idx];
+            document.getElementById('modal-qr').src = qrDataURL(item.qr, 8, 2);
+            document.getElementById('modal-qr-text').innerText = mainText(item);
+            document.getElementById('modal-qr-idx').innerText = `${STORES[item.store].name} 第 ${zoomOrder.length - idx} 件`;
+        }
+        function zoomPrev() { showZoomAt(zoomIndex - 1); }
+        function zoomNext() { showZoomAt(zoomIndex + 1); }
+        function closeZoom() { document.getElementById('qr-modal').style.display = 'none'; }
+        (function initZoomNav() {
+            const modal = document.getElementById('qr-modal');
+            document.getElementById('zoom-prev').addEventListener('click', (e) => { e.stopPropagation(); zoomPrev(); });
+            document.getElementById('zoom-next').addEventListener('click', (e) => { e.stopPropagation(); zoomNext(); });
+            modal.addEventListener('click', (e) => {
+                if (['modal-qr', 'zoom-prev', 'zoom-next'].includes(e.target.id)) return;
+                closeZoom();
+            });
+            let sx = 0, sy = 0, moved = false;
+            modal.addEventListener('touchstart', (e) => { sx = e.changedTouches[0].clientX; sy = e.changedTouches[0].clientY; moved = false; }, { passive: true });
+            modal.addEventListener('touchmove', () => { moved = true; }, { passive: true });
+            modal.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+                if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { if (dx < 0) zoomPrev(); else zoomNext(); }
+                else if (!moved && !['zoom-prev','zoom-next'].includes(e.target.id)) closeZoom();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (modal.style.display !== 'flex') return;
+                if (e.key === 'ArrowLeft') zoomPrev();
+                else if (e.key === 'ArrowRight') zoomNext();
+                else if (e.key === 'Escape') closeZoom();
+            });
+        })();
+
+        // ---------- 畫面 ----------
+        const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const mainText = it => it.store === 'fm' ? (it.order_no || it.ref) : it.ref;
+        const subText = it => it.store === 'fm' && it.fm_no ? `訂單編號 ${it.fm_no}` : '';
+
+        function renderTabs() {
+            document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.store === active)));
+            document.getElementById('pdf-btn').innerText = `匯出 ${STORES[active].name} PDF`;
+            document.getElementById('col-name').innerText = STORES[active].col;
+            document.getElementById('count-label').innerText = `${STORES[active].name} 件數`;
+        }
+
+        function renderTable() {
+            document.getElementById('n-711').innerText = itemsOf('711').length;
+            document.getElementById('n-fm').innerText = itemsOf('fm').length;
+            const list = itemsOf(active);
+            const n = list.length;
+            tableBody.innerHTML = [...list].reverse().map((item, index) => {
+                const sub = subText(item);
+                return `
+                    <tr class="hover:bg-zinc-50 transition-colors">
+                        <td class="p-3 text-center font-bold text-zinc-300 text-2xl border-r">${n - index}</td>
+                        <td class="p-3 font-mono font-bold text-base sm:text-lg text-orange-600 break-all">${esc(mainText(item))}
+                            ${sub ? `<div class="font-normal text-[11px] text-zinc-500 mt-1">${esc(sub)}</div>` : ''}
+                            <div class="sm:hidden font-normal text-[10px] text-zinc-400 mt-1">${esc(item.time || '')}</div></td>
+                        <td class="p-2 text-center"><img data-zoom="${index}" src="${qrDataURL(item.qr, 4, 1)}" class="qr-img inline-block" alt="QR"></td>
+                        <td class="p-3 text-right font-mono text-[10px] text-zinc-400 hidden sm:table-cell">${esc(item.time || '')}</td>
+                        <td class="p-3 text-center">
+                            <button data-del="${item.id}" aria-label="刪除" class="text-zinc-300 hover:text-red-500 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+            document.getElementById('empty').style.display = n ? 'none' : 'block';
+            document.getElementById('empty').innerText = `尚無 ${STORES[active].name} 資料，${STORES[active].hint}`;
+            document.getElementById('count-value').innerText = n;
+        }
+        tableBody.addEventListener('click', (e) => {
+            const img = e.target.closest('[data-zoom]');
+            if (img) { openZoom(Number(img.dataset.zoom)); return; }
+            const del = e.target.closest('[data-del]');
+            if (del) deleteItem(Number(del.dataset.del));
+        });
+
+        async function deleteItem(id) {
+            const item = allItems.find(i => i.id === id);
+            if (!confirm(`刪除 ${item ? mainText(item) : '這筆紀錄'}？`)) return;
+            const { error } = await _supabase.from(TABLE).delete().eq('id', id);
+            if (error) setStatus('刪除失敗：' + error.message, 'red');
+            await refreshData();
+        }
+        async function clearStore() {
+            const store = active, name = STORES[store].name, n = itemsOf(store).length;
+            if (!n) return;
+            if (!confirm(`清空 ${name} 全部 ${n} 件？（另一家不受影響）`)) return;
+            const { error } = await _supabase.from(TABLE).delete().eq('store', store);
+            if (error) setStatus('清空失敗：' + error.message, 'red');
+            else setStatus(`已清空 ${name}`, 'gray');
+            await refreshData();
+        }
+
+        // ---------- 匯出 PDF ----------
+        // 每件用原始 QR 內容重新產生，門市掃到的內容和原標籤相同
+        const PW = 595.28, PH = 841.89, M = 36, S = 2.5, BOTTOM = PH - M - 20;
+        const LAYOUT = {
+            '711': { COLS: 5, CELL_H: 118, QR: 80 },
+            'fm':  { COLS: 4, CELL_H: 160, QR: 116 }    // 全家 QR 內容長、格子密，印大一點才好掃
+        };
+        const SANS = '"PingFang TC","Noto Sans TC","Microsoft JhengHei",Inter,sans-serif';
+        const MONO = 'Menlo,Consolas,"Roboto Mono",monospace';
+
+        function drawQR(ctx, text, x, y, size) {
+            const q = makeQR(text), n = q.getModuleCount(), quiet = 3, m = size / (n + quiet * 2);
+            ctx.fillStyle = '#fff'; ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = '#000';
+            for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
+                if (q.isDark(r, c)) ctx.fillRect(x + (c + quiet) * m, y + (r + quiet) * m, m + 0.02, m + 0.02);
+        }
+
+        function planPages(n, L) {
+            const pages = []; let i = 0, first = true;
+            while (i < n) {
+                const top = first ? M + 70 : M + 30;
+                const rows = Math.max(1, Math.floor((BOTTOM - top) / L.CELL_H));
+                const take = Math.min(n - i, rows * L.COLS);
+                pages.push({ start: i, count: take, top, first });
+                i += take; first = false;
+            }
+            const last = pages[pages.length - 1];
+            const sigY = last.top + Math.ceil(last.count / L.COLS) * L.CELL_H + 22;
+            if (sigY + 48 <= BOTTOM) last.sigY = sigY;
+            else pages.push({ start: n, count: 0, top: M + 30, first: false, sigY: M + 50 });
+            return pages;
+        }
+
+        function drawPage(items, store, pg, pi, total, dateFull) {
+            const L = LAYOUT[store], name = STORES[store].name, n = items.length;
+            const cv = document.createElement('canvas');
+            cv.width = Math.round(PW * S); cv.height = Math.round(PH * S);
+            const ctx = cv.getContext('2d');
+            ctx.scale(S, S);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, PW, PH);
+            const ink = '#18181B', muted = '#71717A', line = '#D4D4D8', accent = '#EE4D2D';
+            const title = `合勝大佃｜蝦皮 ${name} 寄件`;
+
+            if (pg.first) {
+                ctx.fillStyle = ink; ctx.font = `700 18px ${SANS}`; ctx.textAlign = 'left';
+                ctx.fillText(title, M, M + 20);
+                ctx.fillStyle = muted; ctx.font = `400 10px ${SANS}`;
+                ctx.fillText(dateFull, M, M + 40);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = ink; ctx.font = `500 14px ${SANS}`;
+                const jw = ctx.measureText('件').width;
+                ctx.fillText('件', PW - M, M + 44);
+                ctx.fillStyle = accent; ctx.font = `700 36px ${MONO}`;
+                const nw = ctx.measureText(String(n)).width;
+                ctx.fillText(String(n), PW - M - jw - 4, M + 44);
+                ctx.fillStyle = muted; ctx.font = `500 11px ${SANS}`;
+                ctx.fillText('共', PW - M - jw - 8 - nw, M + 44);
+                ctx.textAlign = 'left';
+                ctx.strokeStyle = ink; ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(M, M + 56); ctx.lineTo(PW - M, M + 56); ctx.stroke();
+            } else {
+                ctx.fillStyle = muted; ctx.font = `500 10px ${SANS}`; ctx.textAlign = 'left';
+                ctx.fillText(`${title}　${dateFull}`, M, M + 12);
+                ctx.textAlign = 'right'; ctx.fillText(`共 ${n} 件`, PW - M, M + 12); ctx.textAlign = 'left';
+                ctx.strokeStyle = line; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(M, M + 20); ctx.lineTo(PW - M, M + 20); ctx.stroke();
+            }
+
+            const cellW = (PW - 2 * M) / L.COLS;
+            for (let k = 0; k < pg.count; k++) {
+                const idx = pg.start + k, it = items[idx];
+                const x = M + (k % L.COLS) * cellW, y = pg.top + Math.floor(k / L.COLS) * L.CELL_H;
+                ctx.strokeStyle = line; ctx.lineWidth = 0.6;
+                ctx.strokeRect(x + 0.3, y + 0.3, cellW - 0.6, L.CELL_H - 0.6);
+                ctx.fillStyle = muted; ctx.font = `700 8px ${MONO}`; ctx.textAlign = 'left';
+                ctx.fillText(String(idx + 1), x + 5, y + 11);
+                drawQR(ctx, it.qr, x + (cellW - L.QR) / 2, y + 12, L.QR);
+                ctx.fillStyle = ink; ctx.font = `600 8px ${MONO}`; ctx.textAlign = 'center';
+                ctx.fillText(mainText(it), x + cellW / 2, y + L.QR + 24, cellW - 8);
+                ctx.fillStyle = muted; ctx.font = `400 6.5px ${MONO}`;
+                ctx.fillText(String(it.time || '').slice(-8), x + cellW / 2, y + L.QR + 34);
+                ctx.textAlign = 'left';
+            }
+
+            if (pg.sigY) {
+                const y = pg.sigY, w = (PW - 2 * M - 40) / 3;
+                ['交寄人簽名', '收件人簽名', '日期'].forEach((lab, k) => {
+                    const x = M + k * (w + 20);
+                    ctx.strokeStyle = ink; ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.moveTo(x, y + 26); ctx.lineTo(x + w, y + 26); ctx.stroke();
+                    ctx.fillStyle = muted; ctx.font = `400 9px ${SANS}`;
+                    ctx.fillText(lab, x, y + 40);
+                });
+            }
+
+            ctx.fillStyle = muted; ctx.font = `400 8.5px ${SANS}`;
+            ctx.fillText(`${name}　共 ${n} 件`, M, PH - M + 8);
+            ctx.textAlign = 'right'; ctx.fillText(`第 ${pi + 1} / ${total} 頁`, PW - M, PH - M + 8); ctx.textAlign = 'left';
+            return cv;
+        }
+
+        async function exportToPDF() {
+            const store = active, name = STORES[store].name;
+            await refreshData();                       // 匯出前先抓最新資料，避免漏件
+            const items = itemsOf(store);
+            if (!items.length) { setStatus(`沒有 ${name} 資料可匯出`, 'red'); return; }
+            const btn = document.getElementById('pdf-btn');
+            btn.disabled = true; btn.innerText = '產生中…';
+            try {
+                const now = new Date();
+                const ymd = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+                const dateFull = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+                const pages = planPages(items.length, LAYOUT[store]);
+                const pdf = new jspdf.jsPDF({ unit: 'pt', format: 'a4', compress: true });
+                pages.forEach((pg, i) => {
+                    if (i) pdf.addPage();
+                    const cv = drawPage(items, store, pg, i, pages.length, dateFull);
+                    pdf.addImage(cv.toDataURL('image/png'), 'PNG', 0, 0, PW, PH, undefined, 'FAST');
+                });
+                pdf.save(`${ymd}-${name}-${items.length}件.pdf`);
+                setStatus(`已匯出 ${name} PDF，共 ${items.length} 件`, 'green');
+            } catch (e) {
+                setStatus('PDF 產生失敗：' + e.message, 'red');
+            } finally {
+                btn.disabled = false; renderTabs();
+            }
+        }
+    </script>
+</body>
+</html>
