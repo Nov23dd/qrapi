@@ -173,7 +173,7 @@
 
         // ---------- 辨識：哪一家、哪一個 QR ----------
         // 全家右上角 QR：A3||...||...||蝦皮訂單編號（以 || 分隔，結尾可能有空白，原樣保留）
-        // 7-11 左邊小顆 QR：物流條碼，例如 833001H326695669
+        // 7-11 左邊小顆 QR：物流條碼，廠商代碼 6 碼（可含英文，例如 833001、89A001、7M0001）+ 英文 1 碼 + 數字 9 碼
         function classify(raw) {
             const t = String(raw).replace(/^[\r\n]+|[\r\n]+$/g, '');   // 只去掉頭尾換行，其他字元原樣保留
             const s = t.trim();
@@ -187,7 +187,7 @@
             }
             if (s.startsWith('{') && /Utility/i.test(s)) return { error: '這是 7-11 大顆 QR，請刷左邊小顆 QR' };
             const u = s.toUpperCase();
-            if (/^\d{6}[A-Z]\d{9}$/.test(u)) return { store: '711', qr: u, ref: u, order_no: '', fm_no: '' };
+            if (/^[0-9A-Z]{6}[A-Z]\d{9}$/.test(u)) return { store: '711', qr: u, ref: u, order_no: '', fm_no: '' };
             if (/^\d{9}$|^\d{16}$|^\d[A-Z]{2}\d{2}$/.test(u)) return { error: '這是全家條碼，請刷右上角 QR' };
             return { error: `無法辨識：${s.length > 30 ? s.slice(0, 30) + '…' : s}` };
         }
